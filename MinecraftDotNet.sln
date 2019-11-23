@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Core", "MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj", "{80DBF0AE-1929-456C-BC99-03A2A63F178F}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet", "MinecraftDotNet\MinecraftDotNet.fsproj", "{8D74FDDB-BA88-41D6-86A3-105568397D0C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80DBF0AE-1929-456C-BC99-03A2A63F178F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80DBF0AE-1929-456C-BC99-03A2A63F178F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80DBF0AE-1929-456C-BC99-03A2A63F178F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80DBF0AE-1929-456C-BC99-03A2A63F178F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

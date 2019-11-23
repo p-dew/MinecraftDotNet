@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Program.fs" />
+<!--        <Content Include="Shaders\std_shader.vert.glsl" />-->
+<!--        <Content Include="Shaders\std_shader.frag.glsl" />-->
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+    </ItemGroup>
+
+</Project>
