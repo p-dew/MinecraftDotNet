@@ -1,5 +1,7 @@
-namespace MinecraftDotNet.Core
+namespace MinecraftDotNet.Core.Graphics
+
 open OpenTK.Graphics.OpenGL4
+open MinecraftDotNet.Core.Graphics.OpenGl
 
 type UniformType =
     | Vec1i of int
@@ -10,7 +12,7 @@ type UniformType =
 
 type Uniform =
     {
-        ShaderId: GlId
+        ShaderId: GlHandler
         Location: int
         Name: string
     }

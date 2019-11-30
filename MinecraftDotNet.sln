@@ -1,8 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Core", "MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj", "{80DBF0AE-1929-456C-BC99-03A2A63F178F}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Core.F", "MinecraftDotNet.Core.F\MinecraftDotNet.Core.F.fsproj", "{80DBF0AE-1929-456C-BC99-03A2A63F178F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet", "MinecraftDotNet\MinecraftDotNet.fsproj", "{8D74FDDB-BA88-41D6-86A3-105568397D0C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.F", "MinecraftDotNet.F\MinecraftDotNet.F.fsproj", "{8D74FDDB-BA88-41D6-86A3-105568397D0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinecraftDotNet", "MinecraftDotNet\MinecraftDotNet.csproj", "{6BA5296F-137C-46F2-8190-48A9C3B10A42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinecraftDotNet.Core", "MinecraftDotNet.Core\MinecraftDotNet.Core.csproj", "{D5B27559-56F7-4AAE-A6EA-B0A5398E1BAB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FSharp", "FSharp", "{FBF2AA6C-691F-4C7E-88E9-35C3DEA769D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +24,17 @@ Global
 		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D74FDDB-BA88-41D6-86A3-105568397D0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BA5296F-137C-46F2-8190-48A9C3B10A42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BA5296F-137C-46F2-8190-48A9C3B10A42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BA5296F-137C-46F2-8190-48A9C3B10A42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BA5296F-137C-46F2-8190-48A9C3B10A42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5B27559-56F7-4AAE-A6EA-B0A5398E1BAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5B27559-56F7-4AAE-A6EA-B0A5398E1BAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5B27559-56F7-4AAE-A6EA-B0A5398E1BAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5B27559-56F7-4AAE-A6EA-B0A5398E1BAB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80DBF0AE-1929-456C-BC99-03A2A63F178F} = {FBF2AA6C-691F-4C7E-88E9-35C3DEA769D2}
+		{8D74FDDB-BA88-41D6-86A3-105568397D0C} = {FBF2AA6C-691F-4C7E-88E9-35C3DEA769D2}
 	EndGlobalSection
 EndGlobal

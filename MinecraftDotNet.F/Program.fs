@@ -10,7 +10,6 @@ open OpenTK.Graphics
 [<EntryPoint>]
 let main argv =
     Directory.SetCurrentDirectory("../../../")
-    use window = new GameWindow(1024, 720, GraphicsMode.Default, "MinecraftDotNet")
-    let game = Game(window)
+    use game = new Game()
     game.Start()
     0

@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+      <ProjectReference Include="..\MinecraftDotNet.Core.F\MinecraftDotNet.Core.F.fsproj" />
     </ItemGroup>
 
 </Project>
