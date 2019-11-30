@@ -8,8 +8,12 @@ namespace MinecraftDotNet
     {
         static void Main(string[] args)
         {
-            var game = new MinecraftGame();
-            game.Start();
+            var server = new Server();
+            
+            var client = new Client();
+            client.ConnectTo(server);
+            
+            client.Start();
         }
     }
 }

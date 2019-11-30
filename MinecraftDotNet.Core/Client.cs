@@ -4,9 +4,9 @@ using OpenTK;
 
 namespace MinecraftDotNet.Core
 {
-    public class MinecraftGame
+    public class Client
     {
-        public MinecraftGame()
+        public Client()
         {
             
         }
@@ -20,6 +20,11 @@ namespace MinecraftDotNet.Core
             }, cancellationToken);
             
             renderTask.Wait(cancellationToken);
+        }
+
+        public void ConnectTo(Server server)
+        {
+            server.Clients.Add(this);
         }
     }
 }
