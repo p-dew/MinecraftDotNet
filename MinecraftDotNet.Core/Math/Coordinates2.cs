@@ -2,18 +2,13 @@ namespace MinecraftDotNet.Core.Math
 {
     public class Coordinates2
     {
-        public Coordinates2(int x, int z)
+        public Coordinates2(int x, int y)
         {
             X = x;
-            Z = z;
+            Y = y;
         }
 
         public int X { get; }
-        public int Z { get; }
-
-        public ChunkCoords ToChunkCoords()
-        {
-            return new ChunkCoords(X / Chunk.Width, Z / Chunk.Depth);
-        }
+        public int Y { get; }
     }
 }
