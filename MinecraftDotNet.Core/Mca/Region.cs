@@ -13,12 +13,22 @@ namespace MinecraftDotNet.Core.Mca
         public const int RegionSize = 32;
         
         public ChunkRegion Bounds { get; }
+        public RegionCoords Coords { get; }
         
         private Dictionary<ChunkCoords, Chunk> _chunks;
         private Dictionary<ChunkCoords, PackedChunk> _packed;
 
+        internal Region(RegionCoords coords)
+        {
+            Coords = coords;
+            Bounds = new ChunkRegion(new ChunkCoords(coords.X*RegionSize, coords.Z*RegionSize), RegionSize, RegionSize);
+            _chunks = new Dictionary<ChunkCoords, Chunk>();
+            _packed = new Dictionary<ChunkCoords, PackedChunk>();
+        }
+
         internal Chunk GetChunk(ChunkCoords coord)
         {
+
             if (!Bounds.IsContains(coord))
             {
                 throw new ArgumentException("Unable to get a chunk outside region.");

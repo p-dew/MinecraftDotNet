@@ -20,14 +20,14 @@ namespace MinecraftDotNet.Core
         /// </summary>
         public static int Depth { get; } = 16;
         
-        public Chunk(BlockInfo[,,] blocks, IReadOnlyDictionary<Coordinates3, Meta> blockMetas)
+        public Chunk(BlockInfo[,,] blocks, IDictionary<Coordinates3, Meta> blockMetas)
         {
             Blocks = blocks;
             BlockMetas = blockMetas;
         }
-        
+
         public BlockInfo[,,] Blocks { get; }
         
-        public IReadOnlyDictionary<Coordinates3, Meta> BlockMetas { get; }
+        public IDictionary<Coordinates3, Meta> BlockMetas { get; }
     }
 }
