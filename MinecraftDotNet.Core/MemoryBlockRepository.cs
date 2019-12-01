@@ -6,29 +6,23 @@ namespace MinecraftDotNet.Core
 {
     public class MemoryBlockRepository : IBlockRepository
     {
-        private readonly IDictionary<Coordinates2, Chunk> _loadedChunks;
+        private readonly IDictionary<ChunkCoords, Chunk> _loadedChunks;
         
         public MemoryBlockRepository()
         {
-            _loadedChunks = new Dictionary<Coordinates2, Chunk>();
+            _loadedChunks = new Dictionary<ChunkCoords, Chunk>();
         }
         
         public BlockInfo GetBlock(Coordinates3 pos)
         {
-            var chunkX = pos.X / Chunk.Width;
-            var chunkZ = pos.Z / Chunk.Depth;
-            
-            var chunk = GetChunk(new Coordinates2(chunkX, chunkZ));
+            var chunk = GetChunk(pos.ToChunkCoords());
             
             return chunk.Blocks[pos.X % Chunk.Width, pos.Y, pos.Z % Chunk.Depth];
         }
         
         public Meta GetBlockMeta(Coordinates3 pos)
         {
-            var chunkX = pos.X / Chunk.Width;
-            var chunkZ = pos.Z / Chunk.Depth;
-            
-            var chunk = GetChunk(new Coordinates2(chunkX, chunkZ));
+            var chunk = GetChunk(pos.ToChunkCoords());
             
             var localBlockCoords = new Coordinates3(pos.X % Chunk.Width, pos.Y, pos.Z % Chunk.Depth);
             
@@ -58,7 +52,7 @@ namespace MinecraftDotNet.Core
             return new Chunk(newBlocks, new Dictionary<Coordinates3, Meta>());
         }
         
-        public Chunk GetChunk(Coordinates2 pos)
+        public Chunk GetChunk(ChunkCoords pos)
         {
             if (_loadedChunks.ContainsKey(pos))
                 return _loadedChunks[pos];

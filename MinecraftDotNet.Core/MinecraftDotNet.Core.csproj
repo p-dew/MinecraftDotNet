@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="NbtLib" Version="1.0.1" />
       <PackageReference Include="OpenTK.NetStandard" Version="1.0.4" />
     </ItemGroup>
 
