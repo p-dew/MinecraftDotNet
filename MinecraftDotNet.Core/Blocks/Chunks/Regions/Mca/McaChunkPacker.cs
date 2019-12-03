@@ -3,7 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using NbtLib;
 
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 {
     public class McaChunkPacker : IChunkPacker
     {

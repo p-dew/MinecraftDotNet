@@ -4,7 +4,6 @@ using MinecraftDotNet.Core;
 using System.IO.Compression;
 using System.IO;
 using MinecraftDotNet.Core.Blocks.Chunks;
-using MinecraftDotNet.Core.Blocks.Chunks.Mca;
 
 namespace MinecraftDotNet
 {

@@ -1,4 +1,4 @@
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca.Regions
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions
 {
     public interface IRegionRepository
     {

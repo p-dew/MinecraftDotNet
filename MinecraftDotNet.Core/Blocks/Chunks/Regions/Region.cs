@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca;
 
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca.Regions
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions
 {
     public class Region
     {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 {
     public class PackedChunk
     {

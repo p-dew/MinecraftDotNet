@@ -1,5 +1,5 @@
 
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca.Regions
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions
 {
     /// <summary>
     /// Координаты региона. Верно только для данного RegionProvider

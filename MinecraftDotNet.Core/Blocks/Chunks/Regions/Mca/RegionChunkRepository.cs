@@ -1,8 +1,4 @@
-using System.Collections.Generic;
-using System.IO;
-using MinecraftDotNet.Core.Blocks.Chunks.Mca.Regions;
-
-namespace MinecraftDotNet.Core.Blocks.Chunks.Mca
+namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 {
     public class RegionChunkRepository: IChunkRepository
     {
