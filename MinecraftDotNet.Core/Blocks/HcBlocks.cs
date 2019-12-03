@@ -1,3 +1,5 @@
+using MinecraftDotNet.Core.Items;
+
 namespace MinecraftDotNet.Core.Blocks
 {
     public static class HcBlocks

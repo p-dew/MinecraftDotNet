@@ -2,17 +2,14 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <LangVersion>8</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NbtLib" Version="1.0.1" />
       <PackageReference Include="OpenTK.NetStandard" Version="1.0.4" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MinecraftDotNet.Core.Abstractions\MinecraftDotNet.Core.Abstractions.csproj" />
+      <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
     </ItemGroup>
 
 </Project>
