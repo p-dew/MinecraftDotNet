@@ -1,19 +1,25 @@
 ﻿using System;
-using System.Threading;
-using MinecraftDotNet.Core;
+using MinecraftDotNet.ClientSide;
+using ObjectTK.Exceptions;
 
 namespace MinecraftDotNet
 {
     class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            var server = new Server();
-            
-            var client = new Client();
-            client.ConnectTo(server);
-            
-            client.Start();
+            Console.WriteLine("Minecraft .NET Edition | 0.0.0-indev");
+
+            try
+            {
+                var client = new StandaloneClient();
+                client.Run();
+            }
+            catch (ShaderCompileException e)
+            {
+                Console.WriteLine(e.InfoLog);
+                throw;
+            }
         }
     }
 }

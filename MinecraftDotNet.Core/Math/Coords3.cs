@@ -1,8 +1,8 @@
 namespace MinecraftDotNet.Core.Math
 {
-    public class Coordinates3
+    public class Coords3
     {
-        public Coordinates3(int x, int y, int z)
+        public Coords3(int x, int y, int z)
         {
             X = x;
             Y = y;

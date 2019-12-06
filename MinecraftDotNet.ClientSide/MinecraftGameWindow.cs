@@ -1,8 +1,8 @@
-using System;
 using OpenTK;
 using OpenTK.Graphics;
+using OpenTK.Graphics.ES11;
 
-namespace MinecraftDotNet.Core
+namespace MinecraftDotNet.ClientSide
 {
     public class MinecraftGameWindow : GameWindow
     {
@@ -11,19 +11,14 @@ namespace MinecraftDotNet.Core
         {
             
         }
-        
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-            
-            
-        }
-        
+
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             
             
+            SwapBuffers();
         }
     }
 }

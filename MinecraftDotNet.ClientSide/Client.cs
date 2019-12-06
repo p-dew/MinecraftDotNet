@@ -1,10 +1,11 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MinecraftDotNet.Core;
 using OpenTK;
 
-namespace MinecraftDotNet.Core
+namespace MinecraftDotNet.ClientSide
 {
-    public class Client
+    public class Client : IClient
     {
         public Client()
         {
@@ -22,9 +23,9 @@ namespace MinecraftDotNet.Core
             renderTask.Wait(cancellationToken);
         }
 
-        public void ConnectTo(Server server)
+        public void ConnectTo(IServer server)
         {
-            server.Clients.Add(this);
+            // server.Clients.Add(this);
         }
     }
 }

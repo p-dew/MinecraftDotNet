@@ -1,4 +1,4 @@
-namespace MinecraftDotNet.Core
+namespace MinecraftDotNet.Core.Items
 {
     public class ItemStack
     {

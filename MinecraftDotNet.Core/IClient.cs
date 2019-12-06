@@ -1,6 +1,6 @@
 namespace MinecraftDotNet.Core
 {
-    public class Entity
+    public interface IClient
     {
         
     }

@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <TargetFramework>netstandard2.1</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.csproj" />
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
     </ItemGroup>
 
