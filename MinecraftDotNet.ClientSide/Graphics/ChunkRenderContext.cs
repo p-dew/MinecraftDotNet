@@ -1,4 +1,4 @@
-namespace MinecraftDotNet.Core.Graphics
+namespace MinecraftDotNet.ClientSide.Graphics
 {
     public class ChunkRenderContext : IChunkRenderContext
     {

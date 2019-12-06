@@ -1,8 +1,7 @@
 using ObjectTK.Tools;
-using OpenTK;
 using OpenTK.Graphics;
 
-namespace MinecraftDotNet.Core.Graphics
+namespace MinecraftDotNet.ClientSide.Graphics
 {
     public class Window : DerpWindow
     {

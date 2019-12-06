@@ -1,13 +1,12 @@
+using MinecraftDotNet.ClientSide.Graphics.Shaders;
 using MinecraftDotNet.Core.Blocks.Chunks;
-using MinecraftDotNet.Core.Graphics.Shaders;
 using ObjectTK.Buffers;
 using ObjectTK.Shaders;
-using ObjectTK.Textures;
 using ObjectTK.Tools.Cameras;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace MinecraftDotNet.Core.Graphics
+namespace MinecraftDotNet.ClientSide.Graphics
 {
     public class SingleBlockChunkRenderer : IChunkRenderer<ChunkRenderContext>
     {

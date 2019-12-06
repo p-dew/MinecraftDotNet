@@ -1,7 +1,7 @@
+using MinecraftDotNet.ClientSide.Graphics;
 using MinecraftDotNet.Core;
 using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
-using MinecraftDotNet.Core.Graphics;
 using MinecraftDotNet.Core.Worlds;
 using ObjectTK.Tools.Cameras;
 using OpenTK;

@@ -1,6 +1,6 @@
 using MinecraftDotNet.Core.Blocks.Chunks;
 
-namespace MinecraftDotNet.Core.Graphics
+namespace MinecraftDotNet.ClientSide.Graphics
 {
     public interface IChunkRenderer<in TContext>
         where TContext : IChunkRenderContext

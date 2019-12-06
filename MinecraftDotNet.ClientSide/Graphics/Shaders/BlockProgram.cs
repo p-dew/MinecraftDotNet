@@ -5,7 +5,7 @@ using ObjectTK.Textures;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace MinecraftDotNet.Core.Graphics.Shaders
+namespace MinecraftDotNet.ClientSide.Graphics.Shaders
 {
     [VertexShaderSource("BlockShader.Vertex")]
     [FragmentShaderSource("BlockShader.Fragment")]

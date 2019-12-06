@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using MinecraftDotNet.Core.Graphics;
 using ObjectTK.Textures;
 using Texture = ObjectTK.Textures.Texture;
 
