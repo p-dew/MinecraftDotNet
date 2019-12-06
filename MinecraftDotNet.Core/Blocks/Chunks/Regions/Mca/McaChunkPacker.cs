@@ -22,7 +22,7 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
                 case CompressionType.Zlib:
                     using (var decompressionStream = new DeflateStream(compressedStream, CompressionMode.Decompress))
                     {
-                        decompressionStream.CopyTo(decompressedStream);
+                        decompressionStream.CopyTo(decompressedStream); // throws exception
                     }
                     break;
                 case CompressionType.GZip:
@@ -32,12 +32,12 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
                     }
                     break;
             }
-                
+            
             decompressedStream.Seek(0L, SeekOrigin.Begin);
             Console.WriteLine(decompressedStream.Length);
-                
+            
             var tags = NbtConvert.ParseNbtStream(decompressedStream);
-                
+            
             Console.WriteLine(tags.ToJsonString());
 
             var newChunk = new Chunk();

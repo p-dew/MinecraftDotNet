@@ -1,4 +1,7 @@
-namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
+using MinecraftDotNet.Core.Blocks.Chunks.Regions;
+using MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca;
+
+namespace MinecraftDotNet.Core.Blocks.Chunks
 {
     public class RegionChunkRepository: IChunkRepository
     {
@@ -18,29 +21,27 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
             var region = _regionRepository.GetRegion(new RegionCoords(coords));
 
             // Если в регионе чанк загружен -> возвращаем
-            if (region.Chunks.ContainsKey(coords))
+            if (region.TryGetChunk(coords, out var chunk))
             {
-                return region.Chunks[coords];
+                return chunk;
             }
 
             // Если в регионе чанк запакован -> Распаковывам -> Добавляем в распакованные -> Возвращаем
-            if (region.PackedChunks.ContainsKey(coords))
+            if (region.TryGetPacketChunk(coords, out var packedChunk))
             {
-                var packetChunk = region.PackedChunks[coords];
-                var unpacketChunk = _chunkPacker.Unpack(packetChunk);
+                var unpackedChunk = _chunkPacker.Unpack(packedChunk);
 
                 // Add chunk to loaded chunks in region
-                region.PackedChunks.Remove(coords);
-                region.Chunks.Add(coords, unpacketChunk);
+                region.SetChunk(coords, unpackedChunk);
                 
-                return unpacketChunk;
+                return unpackedChunk;
             }
 
             // Иначе -> Генерируем -> Возвращаем
             
             var generatedChunk = _chunkGenerator.Generate(coords);
             
-            region.Chunks.Add(coords, generatedChunk);
+            region.SetChunk(coords, generatedChunk);
             
             return generatedChunk;
         }

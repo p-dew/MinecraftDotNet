@@ -7,7 +7,7 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions
     public class RegionCoords
     {
         public RegionCoords(ChunkCoords chCoords) 
-            : this(chCoords.X / Region.Width,chCoords.Z / Region.Depth)
+            : this(chCoords.X / DictRegion.Width,chCoords.Z / DictRegion.Depth)
         { }
 
         public RegionCoords(int x, int z)

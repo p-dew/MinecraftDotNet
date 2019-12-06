@@ -1,14 +1,28 @@
 namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 {
-    public class ChunkRegion
+    public class RegionBounds
     {
-        public ChunkRegion(ChunkCoords position, int xSize, int zSize)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>
+        ///     ^           
+        ///   . | #   #   # 
+        ///     |           
+        ///   . | #   #   # 
+        ///   xSize         
+        ///   . | O   #   # 
+        ///     ---zSize----->
+        ///   .   .   .   . 
+        ///                 
+        /// </remarks>
+        public RegionBounds(ChunkCoords position, int xSize, int zSize)
         {
             Position = position;
             Size = new ChunkCoords(xSize, zSize);
         }
 
-        public ChunkRegion(ChunkCoords pos0, ChunkCoords pos1)
+        public RegionBounds(ChunkCoords pos0, ChunkCoords pos1)
         {
             Position = new ChunkCoords(System.Math.Min(pos0.X, pos1.X), System.Math.Min(pos0.Z, pos1.Z));
             Size = new ChunkCoords(System.Math.Abs(pos0.X - pos1.X), System.Math.Abs(pos0.Z - pos1.Z));

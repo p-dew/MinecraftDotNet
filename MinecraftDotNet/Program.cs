@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Threading;
-using MinecraftDotNet.Core;
-using System.IO.Compression;
-using System.IO;
-using MinecraftDotNet.Core.Blocks.Chunks;
+using MinecraftDotNet.ClientSide;
+using ObjectTK.Exceptions;
 
 namespace MinecraftDotNet
 {
@@ -11,14 +8,18 @@ namespace MinecraftDotNet
     {
         private static void Main(string[] args)
         {
-            var server = new Server();
-            
-            var client = new Client();
-            client.ConnectTo(server);
-            
             Console.WriteLine("Minecraft .NET Edition | 0.0.0-indev");
-            
-            client.Start();
+
+            try
+            {
+                var client = new StandaloneClient();
+                client.Run();
+            }
+            catch (ShaderCompileException e)
+            {
+                Console.WriteLine(e.InfoLog);
+                throw;
+            }
         }
     }
 }

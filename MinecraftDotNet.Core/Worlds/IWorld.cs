@@ -1,5 +1,6 @@
 using System;
 using MinecraftDotNet.Core.Blocks;
+using MinecraftDotNet.Core.Blocks.Chunks;
 using MinecraftDotNet.Core.Entities;
 using MinecraftDotNet.Core.Math;
 
@@ -14,5 +15,6 @@ namespace MinecraftDotNet.Core.Worlds
         event PlayerJoinedHandler PlayerJoined;
         
         IBlockRepository BlockRepository { get; }
+        IChunkRepository ChunkRepository { get; }
     }
 }

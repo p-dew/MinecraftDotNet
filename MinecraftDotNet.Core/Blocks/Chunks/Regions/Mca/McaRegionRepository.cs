@@ -3,18 +3,23 @@ using System.IO;
 
 namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 {
+    public delegate IRegionBuilder RegionBuilderProvider();
+
     public class McaRegionRepository : IRegionRepository
     {
         private readonly string _regionsPath;
-        private readonly IDictionary<RegionCoords, Region> _regions;
+        private readonly RegionBuilderProvider _regionBuilderProvider;
 
-        public McaRegionRepository(string regionsPath)
+        private readonly IDictionary<RegionCoords, IRegion> _regions;
+
+        public McaRegionRepository(string regionsPath, RegionBuilderProvider regionBuilderProvider)
         {
             _regionsPath = regionsPath;
-            _regions = new Dictionary<RegionCoords, Region>();
+            _regionBuilderProvider = regionBuilderProvider;
+            _regions = new Dictionary<RegionCoords, IRegion>();
         }
 
-        public Region GetRegion(RegionCoords coords)
+        public IRegion GetRegion(RegionCoords coords)
         {
             // Возвращаем регион, если уже загружен
             if (_regions.ContainsKey(coords))
@@ -28,19 +33,19 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
             return region;
         }
 
-        public void SaveRegion(RegionCoords coords, Region region)
+        public void SaveRegion(RegionCoords coords, DictRegion dictRegion)
         {
             throw new System.NotImplementedException();
         }
 
-        private Region LoadRegion(RegionCoords coords)
+        private IRegion LoadRegion(RegionCoords coords)
         {
             // Создаём новый регион, который вернём
-            var region = new Region();
+            var regionBuilder = _regionBuilderProvider();
 
             // Global coords (0, 0) chunk inside world
-            var regionX = coords.X * Region.Width;
-            var regionZ = coords.Z * Region.Depth;
+            var regionX = coords.X * DictRegion.Width;
+            var regionZ = coords.Z * DictRegion.Depth;
             
             var fName = $"r.{coords.X}.{coords.Z}.mca";
             using (var fStream = File.OpenRead(_regionsPath + fName))
@@ -52,8 +57,8 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 
                 for (var i = 0; i < 1024; i++)
                 {
-                    var chunkX = regionX + i % Region.Width; // TODO: Может быть вычислять все значения из RegionSize
-                    var chunkZ = regionZ + i / Region.Depth; // Или же, полностью следовать стандарту файла без возможномти настройки.
+                    var chunkX = regionX + i % DictRegion.Width; // TODO: Может быть вычислять все значения из RegionSize
+                    var chunkZ = regionZ + i / DictRegion.Depth; // Или же, полностью следовать стандарту файла без возможномти настройки.
                     //long offset = ((BitConverter.ToUInt32(locations, i * 4) & 0xFFFFFF00) >> 8) * 4096;
                     var offset = 
                         ((long) locations[i*4 + 0] << 16 |
@@ -88,11 +93,11 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
                     var packetChunk = new PackedChunk(compressedData, compressionType);
                     
                     // Добавляем его в регион
-                    region.PackedChunks[new ChunkCoords(chunkX, chunkZ)] = packetChunk;
+                    regionBuilder.SetPacketChunk(new ChunkCoords(chunkX, chunkZ), packetChunk);
                 }
             }
             
-            return region;
+            return regionBuilder.Build();
         }
     }
 }

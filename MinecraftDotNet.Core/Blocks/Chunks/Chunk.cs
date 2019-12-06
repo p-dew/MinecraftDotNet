@@ -23,6 +23,9 @@ namespace MinecraftDotNet.Core.Blocks.Chunks
         /// </summary>
         public static int Depth { get; } = 16;
         
+        /// <summary>
+        /// Creates chunk with empty metas.
+        /// </summary>
         public Chunk()
             : this(new Dictionary<Coords3, Meta>())
         { }

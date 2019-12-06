@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.csproj" />
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
     </ItemGroup>
 
