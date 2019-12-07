@@ -12,9 +12,9 @@ namespace MinecraftDotNet
         private static void Main(string[] args)
         {
             Console.WriteLine("Minecraft .NET Edition | 0.0.0-indev");
-//            ProgramFactory.BasePath =
-//                "/home/vlad/Документы/Проекты/Rider/minecraftdotnet/MinecraftDotNet.ClientSide/Data/Shaders";
-//            Directory.SetCurrentDirectory("/home/vlad/Документы/Проекты/Rider/minecraftdotnet");
+        //    ProgramFactory.BasePath =
+        //        "/home/vlad/Документы/Проекты/Rider/minecraftdotnet/MinecraftDotNet.ClientSide/Data/Shaders";
+        //    Directory.SetCurrentDirectory("/home/vlad/Документы/Проекты/Rider/minecraftdotnet");
             try
             {
                 var client = new StandaloneClient();

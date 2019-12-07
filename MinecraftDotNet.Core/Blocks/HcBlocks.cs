@@ -15,7 +15,7 @@ namespace MinecraftDotNet.Core.Blocks
 
         static HcBlocks()
         {
-            var dirtBitmap = new Bitmap("/home/vlad/Документы/Проекты/Rider/minecraftdotnet/assets/textures/girt.png");
+            var dirtBitmap = new Bitmap("./assets/textures/girt.png");
             var dirtTex = new Texture2D(SizedInternalFormat.Rgba8, dirtBitmap.Width, dirtBitmap.Height);
             dirtTex.LoadBitmap(dirtBitmap);
             Dirt = new BlockInfo(new ItemInfo("dirt", 64), new BlockSides(new[]{dirtTex,dirtTex,dirtTex,dirtTex,dirtTex,dirtTex}));
@@ -23,6 +23,8 @@ namespace MinecraftDotNet.Core.Blocks
             var airBitmap = new Bitmap(16, 16);
             var airTex = new Texture2D(SizedInternalFormat.Rgba8, airBitmap.Width, airBitmap.Height);
             airTex.LoadBitmap(airBitmap);
+            //TODO: remove
+            airTex = null;
             Air = new BlockInfo(new ItemInfo("air", 0), new BlockSides(new[]{airTex,airTex,airTex,airTex,airTex,airTex,}));
         }
     }

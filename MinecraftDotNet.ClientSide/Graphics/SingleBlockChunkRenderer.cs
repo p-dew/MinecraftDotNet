@@ -98,7 +98,7 @@ namespace MinecraftDotNet.ClientSide.Graphics
             _program.MvpMatrix.Value = _camera.GetCameraTransform();
             
             for (var x = 0; x < Chunk.Width; x++) 
-            for (var y = 0; y < 2; y++) 
+            for (var y = 0; y < Chunk.Height; y++) 
             for (var z = 0; z < Chunk.Depth; z++)
             {
                 var blockInfo = chunk.Blocks[x, y, z];
@@ -109,19 +109,27 @@ namespace MinecraftDotNet.ClientSide.Graphics
                 
                 _program.BlockPosition.Value = new Vector3d(blockX, blockY, blockZ);
                 
-                for (var i = 0; i < 6; i++)
+                // TODO: Убрать код рендера всего блока по 1 текстуре
                 {
-                    var tex = blockInfo.Sides.Textures[i];
+                    var tex = blockInfo.Sides.Textures[0];
                     if (tex == null)
-                    {
                         continue;
-                    } 
                     _program.Side.BindTexture(TextureUnit.Texture0, tex);
-                    
-                    _vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4);
-                    //_vao.DrawElementsIndirect(PrimitiveType.TriangleStrip, DrawElementsType.UnsignedInt, i * 4);
-                    //_vao.DrawElements(PrimitiveType.TriangleStrip, 4);
+                    _vao.DrawElements(PrimitiveType.TriangleStrip, 4*6);
                 }
+                // for (var i = 0; i < 6; i++)
+                // {
+                //     var tex = blockInfo.Sides.Textures[i];
+                //     if (tex == null)
+                //     {
+                //         continue;
+                //     } 
+                //     _program.Side.BindTexture(TextureUnit.Texture0, tex);
+                    
+                //     //_vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4);
+                //     //_vao.DrawElementsIndirect(PrimitiveType.TriangleStrip, DrawElementsType.UnsignedInt, i * 4);
+                //     //_vao.DrawElements(PrimitiveType.TriangleStrip, 4);
+                // }
                 
                 //_vao.DrawElements(PrimitiveType.LineStrip, 8);
             }
