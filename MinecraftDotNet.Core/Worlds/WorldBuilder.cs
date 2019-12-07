@@ -4,8 +4,8 @@ namespace MinecraftDotNet.Core.Worlds
 {
     public class WorldBuilder
     {
-        private BlockRepositoryProvider _blockRepositoryProvider;
-        private ChunkRepositoryProvider _chunkRepositoryProvider;
+        private BlockRepositoryProvider? _blockRepositoryProvider;
+        private ChunkRepositoryProvider? _chunkRepositoryProvider;
         
         public WorldBuilder()
         {

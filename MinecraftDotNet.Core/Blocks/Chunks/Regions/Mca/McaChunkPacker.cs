@@ -44,7 +44,7 @@ namespace MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca
 
             throw new NotImplementedException("Need to implement chunk reading");
 
-            return newChunk;
+            // return newChunk;
         }
 
         public PackedChunk Pack(Chunk chunk)

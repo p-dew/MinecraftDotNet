@@ -1,6 +1,6 @@
+using System;
 using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
-using MinecraftDotNet.Core.Blocks.Chunks.Regions.Mca;
 
 namespace MinecraftDotNet.Core.Worlds
 {
@@ -14,9 +14,9 @@ namespace MinecraftDotNet.Core.Worlds
             BlockRepository = blockRepositoryProvider();
             ChunkRepository = chunkRepositoryProvider();
         }
-        
-        public event BlockPlacedHandler BlockPlaced;
-        public event PlayerJoinedHandler PlayerJoined;
+
+        public event BlockPlacedHandler BlockPlaced = (info, coords, player) => { };
+        public event PlayerJoinedHandler PlayerJoined = player => { };
         
         public IBlockRepository BlockRepository { get; }
         
