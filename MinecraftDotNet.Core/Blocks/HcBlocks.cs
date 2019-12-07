@@ -1,4 +1,6 @@
+using System;
 using System.Drawing;
+using System.IO;
 using MinecraftDotNet.Core.Items;
 using ObjectTK.Textures;
 using OpenTK.Graphics.OpenGL;
@@ -13,7 +15,7 @@ namespace MinecraftDotNet.Core.Blocks
 
         static HcBlocks()
         {
-            var dirtBitmap = new Bitmap("./assets/textures/dirt.png");
+            var dirtBitmap = new Bitmap("/home/vlad/Документы/Проекты/Rider/minecraftdotnet/assets/textures/girt.png");
             var dirtTex = new Texture2D(SizedInternalFormat.Rgba8, dirtBitmap.Width, dirtBitmap.Height);
             dirtTex.LoadBitmap(dirtBitmap);
             Dirt = new BlockInfo(new ItemInfo("dirt", 64), new BlockSides(new[]{dirtTex,dirtTex,dirtTex,dirtTex,dirtTex,dirtTex}));
