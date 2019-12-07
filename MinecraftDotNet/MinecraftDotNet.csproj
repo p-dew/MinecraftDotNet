@@ -10,4 +10,11 @@
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="assets\textures\dirt.png" />
+      <Content Include="assets\textures\dirt.png">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

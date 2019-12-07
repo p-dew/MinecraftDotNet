@@ -15,8 +15,10 @@ namespace MinecraftDotNet.Core.Blocks
 
         static HcBlocks()
         {
-            var dirtBitmap = new Bitmap("./assets/textures/girt.png");
+            var dirtBitmap = new Bitmap("./assets/textures/dirt.png");
             var dirtTex = new Texture2D(SizedInternalFormat.Rgba8, dirtBitmap.Width, dirtBitmap.Height);
+            dirtTex.SetParameter(TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
+            dirtTex.SetParameter(TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
             dirtTex.LoadBitmap(dirtBitmap);
             Dirt = new BlockInfo(new ItemInfo("dirt", 64), new BlockSides(new[]{dirtTex,dirtTex,dirtTex,dirtTex,dirtTex,dirtTex}));
             

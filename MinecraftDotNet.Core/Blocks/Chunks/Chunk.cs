@@ -16,7 +16,7 @@ namespace MinecraftDotNet.Core.Blocks.Chunks
         /// <summary>
         /// Matches to Y coordinate.
         /// </summary>
-        public static int Height { get; } = 256;
+        public static int Height { get; } = 1;
         
         /// <summary>
         /// Matches to Z coordinate.

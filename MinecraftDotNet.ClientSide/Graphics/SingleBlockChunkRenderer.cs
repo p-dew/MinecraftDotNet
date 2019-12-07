@@ -109,6 +109,8 @@ namespace MinecraftDotNet.ClientSide.Graphics
                 
                 _program.BlockPosition.Value = new Vector3d(blockX, blockY, blockZ);
                 
+                _program.MvpMatrix.Set(context.ModelView * context.Projection);
+                
                 // TODO: Убрать код рендера всего блока по 1 текстуре
                 {
                     var tex = blockInfo.Sides.Textures[0];
@@ -135,7 +137,6 @@ namespace MinecraftDotNet.ClientSide.Graphics
             }
             
             GL.BindVertexArray(0);
-            
         }
     }
 }

@@ -11,6 +11,7 @@ namespace MinecraftDotNet
     {
         private static void Main(string[] args)
         {
+            Console.WriteLine(Directory.GetCurrentDirectory());
             Console.WriteLine("Minecraft .NET Edition | 0.0.0-indev");
         //    ProgramFactory.BasePath =
         //        "/home/vlad/Документы/Проекты/Rider/minecraftdotnet/MinecraftDotNet.ClientSide/Data/Shaders";
