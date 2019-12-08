@@ -36,6 +36,9 @@ namespace MinecraftDotNet.ClientSide
             base.OnLoad(e);
             
             GL.ClearColor(Color.MidnightBlue);
+            
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Less);
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)

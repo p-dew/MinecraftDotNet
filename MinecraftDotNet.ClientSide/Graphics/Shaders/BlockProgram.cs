@@ -21,8 +21,6 @@ namespace MinecraftDotNet.ClientSide.Graphics.Shaders
         
         public Uniform<Matrix4> MvpMatrix { get; protected set; }
         
-        public Uniform<Vector3d> BlockPosition { get; protected set; }
-        
         // Fragment
 
         public TextureUniform<Texture2D> Side { get; protected set; }

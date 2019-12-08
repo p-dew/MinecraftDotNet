@@ -4,6 +4,7 @@ using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
 using MinecraftDotNet.Core.Worlds;
 using ObjectTK.Tools.Cameras;
+using OpenTK;
 
 namespace MinecraftDotNet.ClientSide
 {
@@ -11,20 +12,26 @@ namespace MinecraftDotNet.ClientSide
     {
         private readonly MinecraftGameWindow _window;
         private readonly IWorld _currentWorld;
-        private SingleBlockChunkRenderer _chunkRenderer;
+        private readonly SingleBlockChunkRenderer _chunkRenderer;
         private readonly Camera _camera;
 
         public StandaloneClient()
         {
-            _camera = new Camera();
+            _camera = new Camera
+            {
+                State =
+                {
+                    Position = new Vector3(2, 2, 2), 
+                    LookAt = Vector3.One
+                }
+            };
             _camera.SetBehavior(new FreeLookBehavior());
-            _camera.DefaultState.Position.Z -= 20;
 
             _window = new MinecraftGameWindow(_camera);
             
             _camera.Enable(_window);
 
-            var chunkRepository = new MemoryChunkRepository(new FlatChunkGenerator(60));
+            var chunkRepository = new MemoryChunkRepository(new ChessChunkGenerator());
             var blockRepository = new ChunkBlockRepository(chunkRepository);
             _currentWorld = new World(
                 () => chunkRepository, 
@@ -39,7 +46,6 @@ namespace MinecraftDotNet.ClientSide
                 _chunkRenderer.Render(new ChunkRenderContext(projection, modelView), chunk, chunkCoords);
             });
         }
-
 
         public void Run()
         {
