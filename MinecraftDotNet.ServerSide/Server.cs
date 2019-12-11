@@ -6,12 +6,13 @@ namespace MinecraftDotNet.ServerSide
 {
     public class Server : IServer
     {
-        public Server()
+        public Server(IWorld world)
         {
+            World = world;
             Clients = new List<IClient>();
         }
 
-        public IWorld CurrentWorld { get; }
+        public IWorld World { get; }
         
         public IReadOnlyCollection<IClient> Clients { get; }
     }

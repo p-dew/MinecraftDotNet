@@ -5,7 +5,7 @@ namespace MinecraftDotNet.Core
 {
     public interface IServer
     {
-        IWorld CurrentWorld { get; }
+        IWorld World { get; }
         
         IReadOnlyCollection<IClient> Clients { get; }
     }
