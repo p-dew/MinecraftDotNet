@@ -1,4 +1,5 @@
 using MinecraftDotNet.ClientSide.Graphics.Shaders;
+using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
 using ObjectTK.Buffers;
 using ObjectTK.Shaders;
@@ -14,24 +15,96 @@ namespace MinecraftDotNet.ClientSide.Graphics
 
         private static readonly Vector3d[] CubeVertices = new Vector3d[]
         {
+            // X = 0
             new Vector3d(0, 0, 0),
             new Vector3d(0, 0, 1),
             new Vector3d(0, 1, 0),
             new Vector3d(0, 1, 1),
+            // X = 1
             new Vector3d(1, 0, 0),
             new Vector3d(1, 0, 1),
             new Vector3d(1, 1, 0),
             new Vector3d(1, 1, 1),
+            
+            // Y = 0
+            new Vector3d(0, 0, 0),
+            new Vector3d(0, 0, 1),
+            new Vector3d(1, 0, 0),
+            new Vector3d(1, 0, 1),
+            // Y = 1
+            new Vector3d(0, 1, 0),
+            new Vector3d(0, 1, 1),
+            new Vector3d(1, 1, 0),
+            new Vector3d(1, 1, 1),
+            
+            // Z = 0
+            new Vector3d(0, 0, 0),
+            new Vector3d(0, 1, 0),
+            new Vector3d(1, 0, 0),
+            new Vector3d(1, 1, 0),
+            // Z = 1
+            new Vector3d(0, 0, 1),
+            new Vector3d(0, 1, 1),
+            new Vector3d(1, 0, 1),
+            new Vector3d(1, 1, 1),
+        };
+        
+        private static readonly Vector2d[] CubeUv = new Vector2d[]
+        {
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
         };
 
-        private static readonly byte[] CubeEbo = new byte[]
+        private static readonly int[] CubeEbo = new int[]
         {
-            4, 5, 6, 7,
-            0, 1, 2, 3,
-            2, 3, 6, 7,
-            0, 1, 4, 5,
-            1, 3, 5, 7,
-            0, 2, 4, 6,
+            // 4, 5, 6, 7,
+            // 0, 1, 2, 3,
+            // 2, 3, 6, 7,
+            // 0, 1, 4, 5,
+            // 1, 3, 5, 7,
+            // 0, 2, 4, 6,
+            
+            0, 2, 3,
+            3, 1, 0,
+
+            1, 3, 7,
+            7, 5, 1,
+
+            5, 7, 6,
+            6, 4, 5,
+
+            4, 6, 2,
+            2, 0, 4,
+
+            0, 1, 5,
+            5, 4, 0,
+
+            7, 3, 2,
+            2, 6, 7
         };
 
         private static readonly Vector2d[] Uvs = new Vector2d[]
@@ -49,28 +122,51 @@ namespace MinecraftDotNet.ClientSide.Graphics
 
         private readonly VertexArray _vao;
         private readonly BlockProgram _program;
+        private readonly Buffer<Vector3d> _cubeVertexBuffer;
+        private readonly Buffer<int> _cubeElementBuffer;
+        private readonly Buffer<Vector2d> _cubeUvBuffer;
 
         public SingleBlockChunkRenderer(Camera camera)
         {
             _camera = camera;
             _program = ProgramFactory.Create<BlockProgram>();
             
-            var vbo = new Buffer<Vector3d>();
-            vbo.Init(BufferTarget.ArrayBuffer, CubeVertices);
+            _cubeVertexBuffer = new Buffer<Vector3d>();
+            _cubeVertexBuffer.Init(BufferTarget.ArrayBuffer, CubeVertices);
             
-            var vertebo = new Buffer<byte>();
-            vertebo.Init(BufferTarget.ElementArrayBuffer, CubeEbo);
-
-            var texebo = new Buffer<byte>();
-            texebo.Init(BufferTarget.ElementArrayBuffer, TexEbo);
+            _cubeElementBuffer = new Buffer<int>();
+            _cubeElementBuffer.Init(BufferTarget.ElementArrayBuffer, CubeEbo);
+            
+            _cubeUvBuffer = new Buffer<Vector2d>();
+            _cubeUvBuffer.Init(BufferTarget.ArrayBuffer, CubeUv);
             
             _vao = new VertexArray();
+            _vao.Bind();
+
+            _vao.BindAttribute(_program.InVertex, _cubeVertexBuffer);
+            _vao.BindAttribute(_program.InUv, _cubeUvBuffer);
             
-            _vao.BindElementBuffer(vertebo);
-            _vao.BindAttribute(_program.InVertex, vbo);
-            
+            // _vao.BindElementBuffer(_cubeElementBuffer);
         }
-        
+
+        private void RenderCube(ChunkRenderContext context, BlockInfo blockInfo, int x, int y, int z)
+        {
+            _program.MvpMatrix.Set(
+                Matrix4.CreateTranslation(new Vector3(x, y, z)) *
+                context.ViewMatrix *
+                context.ProjectionMatrix);
+
+            for (var i = 0; i < 3; i++)
+            {
+                var tex = blockInfo.Sides.Textures[i];
+                
+                _program.Side.BindTexture(TextureUnit.Texture0, tex);
+
+                _vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4);
+                // _vao.DrawElements(PrimitiveType.Triangles, _cubeElementBuffer.ElementCount);
+            }
+        }
+
         public void Render(ChunkRenderContext context, Chunk chunk, ChunkCoords chunkCoords)
         {
             _vao.Bind();
@@ -83,23 +179,16 @@ namespace MinecraftDotNet.ClientSide.Graphics
             for (var z = 0; z < Chunk.Depth; z++)
             {
                 var blockInfo = chunk.Blocks[x, y, z];
+                
+                // Air-skipping
+                if (blockInfo.ItemInfo.Id == "air")
+                    continue;
 
                 var blockX = chunkCoords.X * Chunk.Width + x;
                 var blockY = y;
                 var blockZ = chunkCoords.Z * Chunk.Depth + z;
                 
-                _program.BlockPosition.Value = new Vector3d(blockX, blockY, blockZ);
-                
-                for (var i = 0; i < 6; i++)
-                {
-                    var tex = blockInfo.Sides.Textures[i];
-                    _program.Side.BindTexture(TextureUnit.Texture0, tex);
-                    
-                    _vao.DrawElementsIndirect(PrimitiveType.TriangleStrip, DrawElementsType.UnsignedByte, i * 4);
-                    _vao.DrawElements(PrimitiveType.TriangleStrip, 4);
-                }
-                
-                _vao.DrawElements(PrimitiveType.LineStrip, 8);
+                RenderCube(context, blockInfo, blockX, blockY, blockZ);
             }
             
             GL.BindVertexArray(0);

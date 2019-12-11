@@ -1,4 +1,3 @@
-using System;
 using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
 using MinecraftDotNet.Core.Entities;

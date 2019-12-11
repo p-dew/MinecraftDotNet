@@ -10,12 +10,11 @@ in vec2 InUv;
 out vec2 Uv;
 
 uniform mat4 MvpMatrix;
-uniform vec3 BlockPosition;
 
 void main()
 {
     Uv = InUv;
-    gl_Position = MvpMatrix * vec4(InVertex + BlockPosition, 1);
+    gl_Position = MvpMatrix * vec4(InVertex, 1);
 }
 
 

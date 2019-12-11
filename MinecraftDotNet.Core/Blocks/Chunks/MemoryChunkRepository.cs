@@ -15,9 +15,9 @@ namespace MinecraftDotNet.Core.Blocks.Chunks
         
         public void UnloadChunk(ChunkCoords coords)
         {
-            throw new System.NotImplementedException();
+            _generatedChunks.Remove(coords);
         }
-
+        
         public Chunk GetChunk(ChunkCoords coords)
         {
             if (_generatedChunks.TryGetValue(coords, out var chunk))

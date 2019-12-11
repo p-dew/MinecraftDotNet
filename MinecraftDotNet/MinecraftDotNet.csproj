@@ -2,12 +2,23 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.csproj" />
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="assets\textures\dirt.png" />
+      <Content Include="assets\textures\dirt.png">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="assets\textures\test0.png" />
+      <Content Include="assets\textures\test0.png">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
