@@ -8,18 +8,18 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace MinecraftDotNet.ClientSide
 {
-    public class MinecraftGameWindow : DerpWindow
+    public class McGameWindow : DerpWindow
     {
         public delegate void RenderAction(Matrix4 projection, Matrix4 modelView);
         
         private readonly Camera _camera;
         
-        private Matrix4 _projection;
-        private Matrix4 _modelView;
+        private Matrix4 _projectionMatrix;
+        private Matrix4 _viewMatrix;
         
         private readonly Queue<RenderAction> _renderActions;
 
-        public MinecraftGameWindow(Camera camera)
+        public McGameWindow(Camera camera)
             : base(1024, 720, GraphicsMode.Default, "Minecraft .NET Edition")
         {
             _camera = camera;
@@ -55,7 +55,7 @@ namespace MinecraftDotNet.ClientSide
             
             foreach (var renderAction in _renderActions)
             {
-                renderAction(_projection, _modelView);
+                renderAction(_projectionMatrix, _viewMatrix);
             }
             
             SwapBuffers();
@@ -75,10 +75,10 @@ namespace MinecraftDotNet.ClientSide
         {
             // setup perspective projection
             var aspectRatio = Width / (float) Height;
-            _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 0.1f, 1000);
-            _modelView = Matrix4.Identity;
+            _projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 0.1f, 1000);
+            _viewMatrix = Matrix4.Identity;
             // apply camera transform
-            _modelView = _camera.GetCameraTransform();
+            _viewMatrix = _camera.GetCameraTransform();
         }
     }
 }

@@ -4,14 +4,14 @@ namespace MinecraftDotNet.ClientSide.Graphics
 {
     public class ChunkRenderContext : IChunkRenderContext
     {
-        public ChunkRenderContext(Matrix4 projection, Matrix4 modelView)
+        public ChunkRenderContext(Matrix4 projectionMatrix, Matrix4 viewMatrix)
         {
-            Projection = projection;
-            ModelView = modelView;
+            ProjectionMatrix = projectionMatrix;
+            ViewMatrix = viewMatrix;
         }
 
-        public Matrix4 Projection { get; }
+        public Matrix4 ProjectionMatrix { get; }
         
-        public Matrix4 ModelView { get; }
+        public Matrix4 ViewMatrix { get; }
     }
 }

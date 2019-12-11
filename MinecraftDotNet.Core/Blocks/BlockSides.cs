@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using ObjectTK.Textures;
-using Texture = ObjectTK.Textures.Texture;
 
 namespace MinecraftDotNet.Core.Blocks
 {

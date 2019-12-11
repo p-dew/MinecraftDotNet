@@ -1,5 +1,4 @@
 using System;
-using MinecraftDotNet.Core.Math;
 
 namespace MinecraftDotNet.Core.Blocks.Chunks
 {

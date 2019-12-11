@@ -11,17 +11,17 @@ namespace MinecraftDotNet.Core.Blocks.Chunks
         /// <summary>
         /// Matches to X coordinate.
         /// </summary>
-        public static int Width { get; } = 8;
+        public static int Width { get; } = 16;
         
         /// <summary>
         /// Matches to Y coordinate.
         /// </summary>
-        public static int Height { get; } = 8;
+        public static int Height { get; } = 32;
         
         /// <summary>
         /// Matches to Z coordinate.
         /// </summary>
-        public static int Depth { get; } = 8;
+        public static int Depth { get; } = 16;
         
         /// <summary>
         /// Creates chunk with empty metas.

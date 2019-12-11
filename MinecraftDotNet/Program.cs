@@ -2,8 +2,6 @@
 using System.IO;
 using MinecraftDotNet.ClientSide;
 using ObjectTK.Exceptions;
-using ObjectTK;
-using ObjectTK.Shaders;
 
 namespace MinecraftDotNet
 {

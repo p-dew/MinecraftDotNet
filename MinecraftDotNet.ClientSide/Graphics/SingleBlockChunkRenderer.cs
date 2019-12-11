@@ -1,14 +1,11 @@
-using System;
 using MinecraftDotNet.ClientSide.Graphics.Shaders;
 using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
-using MinecraftDotNet.Core.Math;
 using ObjectTK.Buffers;
 using ObjectTK.Shaders;
 using ObjectTK.Tools.Cameras;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
-using Buffer = System.Buffer;
 
 namespace MinecraftDotNet.ClientSide.Graphics
 {
@@ -18,18 +15,60 @@ namespace MinecraftDotNet.ClientSide.Graphics
 
         private static readonly Vector3d[] CubeVertices = new Vector3d[]
         {
+            // X = 0
             new Vector3d(0, 0, 0),
             new Vector3d(0, 0, 1),
             new Vector3d(0, 1, 0),
             new Vector3d(0, 1, 1),
+            // X = 1
             new Vector3d(1, 0, 0),
             new Vector3d(1, 0, 1),
             new Vector3d(1, 1, 0),
+            new Vector3d(1, 1, 1),
+            
+            // Y = 0
+            new Vector3d(0, 0, 0),
+            new Vector3d(0, 0, 1),
+            new Vector3d(1, 0, 0),
+            new Vector3d(1, 0, 1),
+            // Y = 1
+            new Vector3d(0, 1, 0),
+            new Vector3d(0, 1, 1),
+            new Vector3d(1, 1, 0),
+            new Vector3d(1, 1, 1),
+            
+            // Z = 0
+            new Vector3d(0, 0, 0),
+            new Vector3d(0, 1, 0),
+            new Vector3d(1, 0, 0),
+            new Vector3d(1, 1, 0),
+            // Z = 1
+            new Vector3d(0, 0, 1),
+            new Vector3d(0, 1, 1),
+            new Vector3d(1, 0, 1),
             new Vector3d(1, 1, 1),
         };
         
         private static readonly Vector2d[] CubeUv = new Vector2d[]
         {
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            new Vector2d(0, 0),
+            new Vector2d(0, 1),
+            new Vector2d(1, 0),
+            new Vector2d(1, 1),
+            
             new Vector2d(0, 0),
             new Vector2d(0, 1),
             new Vector2d(1, 0),
@@ -107,23 +146,24 @@ namespace MinecraftDotNet.ClientSide.Graphics
             _vao.BindAttribute(_program.InVertex, _cubeVertexBuffer);
             _vao.BindAttribute(_program.InUv, _cubeUvBuffer);
             
-            _vao.BindElementBuffer(_cubeElementBuffer);
+            // _vao.BindElementBuffer(_cubeElementBuffer);
         }
 
         private void RenderCube(ChunkRenderContext context, BlockInfo blockInfo, int x, int y, int z)
         {
             _program.MvpMatrix.Set(
                 Matrix4.CreateTranslation(new Vector3(x, y, z)) *
-                context.ModelView * 
-                context.Projection);
+                context.ViewMatrix *
+                context.ProjectionMatrix);
 
-            for (var i = 0; i < 6; i++)
+            for (var i = 0; i < 3; i++)
             {
                 var tex = blockInfo.Sides.Textures[i];
-                    
+                
                 _program.Side.BindTexture(TextureUnit.Texture0, tex);
 
-                _vao.DrawElements(PrimitiveType.Triangles, _cubeElementBuffer.ElementCount);
+                _vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4);
+                // _vao.DrawElements(PrimitiveType.Triangles, _cubeElementBuffer.ElementCount);
             }
         }
 

@@ -2,6 +2,7 @@ using MinecraftDotNet.ClientSide.Graphics;
 using MinecraftDotNet.Core;
 using MinecraftDotNet.Core.Blocks;
 using MinecraftDotNet.Core.Blocks.Chunks;
+using MinecraftDotNet.Core.Entities;
 using MinecraftDotNet.Core.Worlds;
 using ObjectTK.Tools.Cameras;
 using OpenTK;
@@ -10,7 +11,7 @@ namespace MinecraftDotNet.ClientSide
 {
     public class StandaloneClient : IClient
     {
-        private readonly MinecraftGameWindow _window;
+        private readonly McGameWindow _window;
         private readonly IWorld _currentWorld;
         private readonly SingleBlockChunkRenderer _chunkRenderer;
         private readonly Camera _camera;
@@ -25,17 +26,22 @@ namespace MinecraftDotNet.ClientSide
                     LookAt = Vector3.One
                 }
             };
-            _camera.SetBehavior(new FreeLookBehavior());
+            
+            _window = new McGameWindow(_camera);
 
-            _window = new MinecraftGameWindow(_camera);
+            _camera.MoveSpeed /= 2.0f;
+            _camera.MouseMoveSpeed /= 2.0f; 
+            _camera.SetBehavior(new FreeLookBehavior());
             
             _camera.Enable(_window);
 
-            var chunkRepository = new MemoryChunkRepository(new ChessChunkGenerator());
+            var chunkRepository = new MemoryChunkRepository(new ChessChunkGenerator(c => HcBlocks.Dirt));
             var blockRepository = new ChunkBlockRepository(chunkRepository);
-            _currentWorld = new World(
-                () => chunkRepository, 
-                () => blockRepository);
+            _currentWorld = 
+                new WorldBuilder()
+                    .UseBlockRepository(() => blockRepository)
+                    .UseChunkRepository(() => chunkRepository)
+                    .Build();
             
             _chunkRenderer = new SingleBlockChunkRenderer(_camera);
             
@@ -46,6 +52,8 @@ namespace MinecraftDotNet.ClientSide
                 _chunkRenderer.Render(new ChunkRenderContext(projection, modelView), chunk, chunkCoords);
             });
         }
+
+        public Player Player { get; }
 
         public void Run()
         {
