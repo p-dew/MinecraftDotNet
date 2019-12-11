@@ -12,44 +12,40 @@ namespace MinecraftDotNet.ClientSide
     public class StandaloneClient : IClient
     {
         private readonly McGameWindow _window;
-        private readonly IWorld _currentWorld;
         private readonly SingleBlockChunkRenderer _chunkRenderer;
         private readonly Camera _camera;
+        private readonly IServer _server;
 
-        public StandaloneClient()
+        public StandaloneClient(IServer server)
         {
+            _server = server;
+            
             _camera = new Camera
             {
                 State =
                 {
                     Position = new Vector3(2, 2, 2), 
                     LookAt = Vector3.One
-                }
+                },
+                MoveSpeed = 60f / 2f,
+                MouseMoveSpeed = 0.005f / 2f,
             };
             
             _window = new McGameWindow(_camera);
 
-            _camera.MoveSpeed /= 2.0f;
-            _camera.MouseMoveSpeed /= 2.0f; 
             _camera.SetBehavior(new FreeLookBehavior());
             
             _camera.Enable(_window);
 
-            var chunkRepository = new MemoryChunkRepository(new ChessChunkGenerator(c => HcBlocks.Dirt));
-            var blockRepository = new ChunkBlockRepository(chunkRepository);
-            _currentWorld = 
-                new WorldBuilder()
-                    .UseBlockRepository(() => blockRepository)
-                    .UseChunkRepository(() => chunkRepository)
-                    .Build();
+            
             
             _chunkRenderer = new SingleBlockChunkRenderer(_camera);
             
-            _window.AddRenderAction((projection, modelView) =>
+            _window.AddRenderAction((projectionMatrix, viewMatrix) =>
             {
                 var chunkCoords = new ChunkCoords(0, 0);
-                var chunk = chunkRepository.GetChunk(chunkCoords);
-                _chunkRenderer.Render(new ChunkRenderContext(projection, modelView), chunk, chunkCoords);
+                var chunk = _server.World.ChunkRepository.GetChunk(chunkCoords);
+                _chunkRenderer.Render(new ChunkRenderContext(projectionMatrix, viewMatrix), chunk, chunkCoords);
             });
         }
 
