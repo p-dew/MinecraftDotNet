@@ -1,4 +1,7 @@
 .idea/
+.ionide/
+
+.paket/
 
 **/bin/
 **/obj/

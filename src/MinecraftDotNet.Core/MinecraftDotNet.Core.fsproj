@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Core.fs" />
+    <Compile Include="Reader.fs" />
+    <Compile Include="Math.fsi" />
+    <Compile Include="Math.fs" />
+    <Compile Include="Resources.fs" />
+    <Compile Include="Blocks.fs" />
+    <Compile Include="Input.fs" />
+    <Compile Include="Items.fs" />
+    <Compile Include="Entities.fs" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>
