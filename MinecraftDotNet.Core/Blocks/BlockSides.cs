@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using ObjectTK.Textures;
+using MinecraftDotNet.Core.Resources;
 
 namespace MinecraftDotNet.Core.Blocks
 {
     public class BlockSides
     {
-        public BlockSides(IReadOnlyList<Texture2D> textures)
+        public BlockSides(IReadOnlyList<Texture> textures)
         {
             if (textures.Count != 6) 
                 throw new ArgumentException("Block must have only 6 sides.");
@@ -14,13 +14,13 @@ namespace MinecraftDotNet.Core.Blocks
             Textures = textures;
         }
 
-        public IReadOnlyList<Texture2D> Textures { get; }
+        public IReadOnlyList<Texture> Textures { get; }
 
-        public Texture2D RightTexture => Textures[0];
-        public Texture2D LeftTexture  => Textures[1];
-        public Texture2D UpTexture    => Textures[2];
-        public Texture2D DownTexture  => Textures[3];
-        public Texture2D FrontTexture => Textures[4];
-        public Texture2D BackTexture  => Textures[5];
+        public Texture LeftTexture  => Textures[0];
+        public Texture RightTexture => Textures[1];
+        public Texture DownTexture  => Textures[2];
+        public Texture UpTexture    => Textures[3];
+        public Texture BackTexture  => Textures[4];
+        public Texture FrontTexture => Textures[5];
     }
 }

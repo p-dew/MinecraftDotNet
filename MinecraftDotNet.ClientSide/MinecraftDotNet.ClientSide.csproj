@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OpenTK.NetStandard" Version="1.0.4" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <ProjectReference Include="..\FSharp\MinecraftDotNet.ClientSide.Graphics.Core\MinecraftDotNet.ClientSide.Graphics.Core.fsproj" />
+      <ProjectReference Include="..\FSharp\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+      <ProjectReference Include="..\MinecraftDotNet.ClientSide.Graphics.Core\MinecraftDotNet.ClientSide.Graphics.Core.csproj" />
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
     </ItemGroup>
 

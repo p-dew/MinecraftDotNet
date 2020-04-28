@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="Camera.fs" />
+      <Compile Include="Window.fs" />
+      <Compile Include="Mesh.fs" />
+      <Compile Include="Material.fs" />
+      <Compile Include="Graphics.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,21 +1,21 @@
-namespace MinecraftDotNet.Core
+using System;
+
+namespace MinecraftDotNet.Core.Resources
 {
-    public class Meta
+    public class ResourceId
     {
-        public static Meta Empty { get; } = new Meta("");
-
-        public Meta(string content)
+        public ResourceId(string name)
         {
-            Content = content;
+            Name = name;
         }
-
-        public string Content { get; }
-
+        
+        public string Name { get; }
+        
         #region Equality
 
-        protected bool Equals(Meta other)
+        protected bool Equals(ResourceId other)
         {
-            return Content == other.Content;
+            return Name == other.Name;
         }
 
         public override bool Equals(object? obj)
@@ -23,12 +23,12 @@ namespace MinecraftDotNet.Core
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((Meta) obj);
+            return Equals((ResourceId) obj);
         }
 
         public override int GetHashCode()
         {
-            return Content.GetHashCode();
+            return Name.GetHashCode();
         }
 
         #endregion
