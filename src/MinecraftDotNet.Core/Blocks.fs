@@ -1,10 +1,8 @@
 namespace MinecraftDotNet.Core.Blocks
 
 open MinecraftDotNet.Core
-open MinecraftDotNet.Core.Math
+open MinecraftDotNet.Core.Math.Linear
 open System.Collections.Generic
-
-
 
 // Block
 
@@ -108,9 +106,6 @@ type Dimension =
     { Name: string
       Chunks: IDictionary<ChunkCoords, Chunk> }
 
-module Option =
-    let ofPair (b, x) = if b then Some x else None
-
 module Dimension =
     
     open Reader
@@ -135,9 +130,9 @@ module Dimension =
     
     let getChunk (coords: ChunkCoords) (dim: Dimension) =
         reader {
-            match dim.Chunks.TryGetValue(coords) with
-            | true, chunk -> return chunk
-            | false, _ ->
+            match dim.Chunks.TryGetValue(coords) |> Option.ofOut with
+            | Some chunk -> return chunk
+            | None ->
                 match! readChunk coords with
                 | Some chunk -> return chunk
                 | None -> return! generateChunk coords

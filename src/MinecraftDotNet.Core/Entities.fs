@@ -1,7 +1,7 @@
 module MinecraftDotNet.Core.Entities
 
 open System
-open MinecraftDotNet.Core.Math
+open MinecraftDotNet.Core.Math.Linear
 
 type EntityId = EntityId of Guid
 

@@ -30,6 +30,7 @@ module Meta =
         | Empty -> None
         | Meta map -> Map.tryFind key map
     
+    /// Synonym of `Meta.add`
     let set key (value: MetaValue) meta = add key value meta
     
     let mapValue key (mapping: MetaValue -> MetaValue) meta =

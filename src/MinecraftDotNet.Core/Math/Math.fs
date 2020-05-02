@@ -1,67 +1,142 @@
-module MinecraftDotNet.Core.Math
+[<AutoOpen>]
+module MinecraftDotNet.Core.Math.Linear.Generic
 
-open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
+
+// ----------------
+// Types
+// ----------------
+
+[<Struct>]
+[<StructLayout(LayoutKind.Sequential)>]
+type Vector2<'a> =
+    { X: 'a
+      Y: 'a }
+
+[<Struct>]
+[<StructLayout(LayoutKind.Sequential)>]
+type Vector3<'a> =
+    { X: 'a
+      Y: 'a
+      Z: 'a }
+
+[<Struct>]
+[<StructLayout(LayoutKind.Sequential)>]
+type Matrix3x2<'a> =
+    { M11: 'a; M12: 'a
+      M21: 'a; M22: 'a
+      M31: 'a; M32: 'a }
+
+[<Struct>]
+[<StructLayout(LayoutKind.Sequential)>]
+type Matrix4x4<'a> =
+    { M11: 'a; M12: 'a; M13: 'a; M14: 'a
+      M21: 'a; M22: 'a; M23: 'a; M24: 'a
+      M31: 'a; M32: 'a; M33: 'a; M34: 'a
+      M41: 'a; M42: 'a; M43: 'a; M44: 'a }
 
 
 module NumericLiteralG =
-    let inline FromZero() = LanguagePrimitives.GenericZero
-    let inline FromOne()  = LanguagePrimitives.GenericOne
+    open LanguagePrimitives
+    let inline FromZero() = GenericZero
+    let inline FromOne()  = GenericOne
 
-// Vector math
+// ----------------
+// Vector
+// ----------------
 
 module Vector =
     let inline add map2 v1 v2 = map2 ( + ) v1 v2
     let inline negate map v = map ( ~- ) v
     let inline subtract map2 v1 v2 = map2 ( - ) v1 v2
-    let inline scale map v a = map (( * ) a) v
+    let inline scale map v x = map (fun y -> y * x) v
     let inline sum reduce v = reduce ( + ) v
     let inline length map reduce v = sqrt (map (fun x -> x * x) v |> sum reduce)
-    let inline normalize map reduce v = map (( / ) (length map reduce v)) v
+    let inline normalize map reduce v = map (fun y -> y / (length map reduce v)) v
     let inline dot map2 reduce v1 v2 = map2 ( * ) v1 v2 |> sum reduce
 
-// --------------------------------
-// Vector 3
-// --------------------------------
+module Vector2 =
+    
+    let inline create x y = { X = x; Y = y }
+    
+    let inline ofTuple (x, y) = create x y
+    let inline toTuple (vec2: Vector2<_>) = (vec2.X, vec2.Y)
+    
+    let inline iter action (v: Vector2<'a>) =
+        action v.X; action v.Y
+    
+    let inline map mapping (v: Vector2<'a>) : Vector2<'b> =
+        create (mapping v.X) (mapping v.Y)
+    
+    let inline map2 mapping v1 v2 =
+        create (mapping v1.X v2.X) (mapping v1.Y v2.Y)
+    
+    let inline apply applier (v: Vector2<'a>) : Vector2<'b> =
+        create (applier.X v.X) (applier.Y v.Y)
+    
+    let inline fold folder (state: 'State) (v: Vector2<'a>) : 'State =
+        folder (folder state v.X) v.Y
+    
+    let inline reduce reducer (v: Vector2<'a>) : 'b =
+        reducer v.X v.Y
+    
+    // Math
+    
+    let inline add v1 v2 = Vector.add map2 v1 v2
+    let inline negate v = Vector.negate map v
+    let inline subtract v1 v2 = Vector.subtract map2 v1 v2
+    let inline scale v a = Vector.scale map v a
+    let inline sum v = Vector.sum reduce v
+    let inline length v = Vector.length map reduce v
+    let inline normalize v = Vector.normalize map reduce v
+    let inline dot v1 v2 = Vector.dot map2 reduce v1 v2
+    
+    // Conversions
+    
+    let inline toVector2 (x: ^T) =
+        (^T: (member ToTuple: unit -> 'a * 'a) x) |> ofTuple
+    
+    let inline ofVector2 (v: Vector2<'a>) : ^T =
+        let (x1, x2) = toTuple v
+        (^T: (static member OfTuple: 'a * 'a -> ^T) (x1, x2))
 
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Vector3<'T> =
-    { X: 'T
-      Y: 'T
-      Z: 'T }
+type Vector2<'a> with
+    static member inline ( + ) (v1, v2) = Vector2.add v1 v2
+    static member inline (~- ) (v) = Vector2.negate v
+    static member inline ( - ) (v1, v2) = Vector2.subtract v1 v2
+    static member inline ( * ) (v, x) = Vector2.scale v x
 
 module Vector3 =
     
     let inline create x y z =
         { X = x; Y = y; Z = z }
     
-    let inline toTuple v = (v.X, v.Y, v.Z)
+    let inline toTuple (v: Vector3<_>) = (v.X, v.Y, v.Z)
     let inline ofTuple (x, y, z) = create x y z
     
-    let inline map mapping v =
+    let inline map mapping (v: Vector3<_>) =
         create (mapping v.X)
                (mapping v.Y)
                (mapping v.Z)
     
-    let inline map2 mapping v1 v2 =
+    let inline map2 mapping (v1: Vector3<_>) (v2: Vector3<_>) =
         create (mapping v1.X v2.X)
                (mapping v1.Y v2.Y)
                (mapping v1.Z v2.Z)
     
-    let inline apply applier v =
+    let inline apply (applier: Vector3<_>) (v: Vector3<_>) =
         create (applier.X v.X)
                (applier.Y v.Y)
                (applier.Z v.Z)
     
-    let inline fold folder (state: 'State) (v: Vector3<'T>) : 'State =
+    let inline fold folder (state: 'State) (v: Vector3<'a>) : 'State =
         let flip f x y = f y x
         state
         |> flip folder v.X
         |> flip folder v.Y
         |> flip folder v.Z
     
-    let inline reduce reducer (v: Vector3<'T>) : 'T =
+    let inline reduce reducer (v: Vector3<_>) =
         reducer (reducer v.X v.Y) v.Z
     
     // Math
@@ -96,210 +171,22 @@ module Vector3 =
     let inline dot v1 v2 = Vector.dot map2 reduce v1 v2
     let inline normalize v = Vector.normalize map reduce v
 
+
 type Vector3<'a> with
-    static member inline ( + ) (v1: Vector3<'a>, v2: Vector3<'b>) : Vector3<'c> = Vector3.add v1 v2
+    static member inline ( + ) (v1, v2) = Vector3.add v1 v2
     static member inline (~- ) (v) = Vector3.negate v
     static member inline ( - ) (v1, v2) = Vector3.subtract v1 v2
     static member inline ( * ) (v1, v2) = Vector3.cross v1 v2
-    static member inline ( * ) (v, a) = Vector3.scale v a
-    static member inline ( * ) (a, v) = Vector3.scale v a
+    static member inline ( * ) (v, x) = Vector3.scale v x
+    static member inline ( * ) (x, v) = Vector3.scale v x
 
-module T =
-    (Vector3.create 1 2 3) + (Vector3.create 4 5 6)
-    |> ignore
-
-// Aliases
-
-type Vector3i = Vector3<int>
-
-type Vector3f = Vector3<float32>
-module Vector3f =
-    let toSystem (v: Vector3f) =
-        Vector3.toTuple v |> System.Numerics.Vector3
-    let ofSystem (sysv: System.Numerics.Vector3) =
-        Vector3.create sysv.X sysv.Y sysv.Z
-
-type Vector3d = Vector3<double>
-
-
-// --------------------------------
-// Vector 2
-// --------------------------------
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Vector2<'T> =
-    { X: 'T
-      Y: 'T }
-
-module Vector2 =
-    
-    let inline create x y = { X = x; Y = y }
-    
-    let inline ofTuple (x, y) = create x y
-    let inline toTuple vec2 = (vec2.X, vec2.Y)
-    
-    let inline iter action (v: Vector2<'T>) =
-        action v.X; action v.Y
-    
-    let inline map mapping (v: Vector2<'T>) : Vector2<'R> =
-        create (mapping v.X) (mapping v.Y)
-    
-    let inline map2 mapping v1 v2 =
-        create (mapping v1.X v2.X) (mapping v1.Y v2.Y)
-    
-    let inline apply applier (v: Vector2<'T>) : Vector2<'R> =
-        create (applier.X v.X) (applier.Y v.Y)
-    
-    let inline fold folder (state: 'State) (v: Vector2<'T>) : 'State =
-        folder (folder state v.X) v.Y
-    
-    let inline reduce reducer (v: Vector2<'T>) : 'T =
-        reducer v.X v.Y
-    
-    // Math
-    
-    let inline add v1 v2 = Vector.add map2 v1 v2
-    let inline negate v = Vector.negate map v
-    let inline subtract v1 v2 = Vector.subtract map2 v1 v2
-    let inline scale v a = Vector.scale map v a
-    let inline sum v = Vector.sum reduce v
-    let inline length v = Vector.length map reduce v
-    let inline normalize v = Vector.normalize map reduce v
-    let inline dot v1 v2 = Vector.dot map2 reduce v1 v2
-    
-    // Conversions
-    
-    let inline toVector2 (x: ^T) =
-        (^T: (member ToTuple: unit -> 'a * 'a) x) |> ofTuple
-    
-    let inline ofVector2 (v: Vector2<'a>) : ^T =
-        let (x1, x2) = toTuple v
-        (^T: (static member OfTuple: 'a * 'a -> ^T) (x1, x2))
-
-type Vector2<'T> with
-    static member inline ( + ) (v1, v2) = Vector2.add v1 v2
-    static member inline (~- ) (v) = Vector2.negate v
-    static member inline ( - ) (v1, v2) = Vector2.subtract v1 v2
-    static member inline ( * ) (v, x) = Vector2.scale v x
-
-
-// Aliases
-
-type Vector2i = Vector2<int>
-
-type Vector2f = Vector2<single>
-module Vector2f =
-    let inline toSystem v =
-        System.Numerics.Vector2(v.X, v.Y)
-    let inline ofSystem (sysv: System.Numerics.Vector2) =
-        Vector2.create sysv.X sysv.Y
-
-type Vector2d = Vector2<double>
-
-
-// ----
-// Size
-// ----
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Size<'T> =
-    { Width: 'T
-      Height: 'T }
-
-module Size =
-    let inline create width height =
-        { Width = width; Height = height }
-    
-    let inline ofTuple (w, h) = create w h
-    let inline toTuple size = (size.Width, size.Height)
-
-type Size<'T> with
-    member inline this.ToTuple() = Size.toTuple this
-    static member inline OfTuple(w, h) = Size.ofTuple (w, h)
-
-
-type Sizei = Size<int32>
-type Sizeui = Size<uint32>
-type Sizef = Size<single>
-type Sized = Size<double>
-
-
-// -----
-// Color
-// -----
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type ColorRgbaF =
-    { R: single
-      G: single
-      B: single
-      A: single }
-
-type Color = ColorRgbaF
-
-module ColorRgbaF =
-    let inline create r g b a = { R = r; G = g; B = b; A = a }
-    let inline createOfRgb r g b = create r g b 1.f
-    
-    let inline ofTuple (r, g, b, a) = create r g b a
-    let inline toTuple col = (col.R, col.G, col.B, col.A)
-
-type ColorRgbaF with
-    member this.ToTuple() = ColorRgbaF.toTuple this
-    static member OfTuple(r, g, b, a) = ColorRgbaF.ofTuple (r, g, b, a)
-
-// ----
-// Area
-// ----
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Area<'T> =
-    { Width: 'T
-      Height: 'T
-      Depth: 'T }
-
-module Area =
-    let inline create width height depth =
-        { Width = width; Height = height; Depth = depth }
-    
-    let inline ofTuple (w, h, d) = create w h d
-    let inline toTuple area = (area.Width, area.Height, area.Depth)
-
-type Area<'T> with
-    member this.ToTuple() = Area.toTuple this
-    static member OfTuple(w, h, d) = Area.ofTuple (w, h, d)
-
-type Areai = Area<int32>
-type Areaui = Area<uint32>
-type Areaf = Area<single>
-type Aread = Area<double>
-
-
-
-// ================================
-// Matrices
-// ================================
-
+// ----------------
+// Matrix
+// ----------------
 
 module Matrix =
     let inline add map2 m1 m2 = map2 (+) m1 m2
     let inline negate map m = map (~-) m
-
-
-// --------------------------------
-// Matrix2x3
-// --------------------------------
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Matrix3x2<'T> =
-    { M11: 'T; M12: 'T
-      M21: 'T; M22: 'T
-      M31: 'T; M32: 'T }
 
 module Matrix3x2 =
     
@@ -345,18 +232,6 @@ module Matrix3x2 =
     let inline add m1 m2 = Matrix.add map2 m1 m2
     
     let inline negate m = Matrix.negate map m
-
-// --------------------------------
-// Matrix4x4
-// --------------------------------
-
-[<Struct>]
-[<StructLayout(LayoutKind.Sequential)>]
-type Matrix4x4<'T> =
-    { M11: 'T; M12: 'T; M13: 'T; M14: 'T
-      M21: 'T; M22: 'T; M23: 'T; M24: 'T
-      M31: 'T; M32: 'T; M33: 'T; M34: 'T
-      M41: 'T; M42: 'T; M43: 'T; M44: 'T }
 
 module Matrix4x4 =
     
@@ -448,22 +323,25 @@ module Matrix4x4 =
     
     // Misc
     
-    let inline createLookAt cameraPosition cameraTarget cameraUpVector =
-        let zaxis = Vector3.normalize (cameraPosition - cameraTarget)
-        let xaxis = Vector3.normalize (Vector3.cross cameraUpVector zaxis)
-        let yaxis = Vector3.cross zaxis xaxis
-        create
-            xaxis.X yaxis.X zaxis.X 0G
-            xaxis.Y yaxis.Y zaxis.Y 0G
-            xaxis.Z yaxis.Z zaxis.Z 0G
-            (-Vector3.dot xaxis cameraPosition)
-            (-Vector3.dot yaxis cameraPosition)
-            (-Vector3.dot zaxis cameraPosition)
-            1G
+//    let inline createLookAt
+//            (cameraPosition: Vector3< ^a>)
+//            (cameraTarget: Vector3< ^a>)
+//            (cameraUpVector: Vector3< ^a>) =
+//        let zaxis: Vector3< ^a> = Vector3.normalize (cameraPosition - cameraTarget)
+//        let xaxis: Vector3< ^a> = Vector3.normalize (Vector3.cross cameraUpVector zaxis)
+//        let yaxis: Vector3< ^a> = Vector3.cross zaxis xaxis
+//        create
+//            xaxis.X yaxis.X zaxis.X 0G
+//            xaxis.Y yaxis.Y zaxis.Y 0G
+//            xaxis.Z yaxis.Z zaxis.Z 0G
+//            ( - Vector3.dot xaxis cameraPosition)
+//            ( - Vector3.dot yaxis cameraPosition)
+//            ( - Vector3.dot zaxis cameraPosition)
+//            1G
     
-    type CreatePerspectiveError<'T> =
-        | ``NearPlaneDistance <= 0`` of 'T
-        | ``FarPlaneDistance <= 0`` of 'T
+    type CreatePerspectiveError<'a> =
+        | ``NearPlaneDistance <= 0`` of 'a
+        | ``FarPlaneDistance <= 0`` of 'a
         | ``NearPlaneDistance >= FarPlaneDistance``
     
     let inline createPerspective width height (nearPlaneDistance: ^T) farPlaneDistance =
@@ -475,7 +353,8 @@ module Matrix4x4 =
             ``NearPlaneDistance >= FarPlaneDistance`` |> Error
         else
             let negFarRange =
-                if (^T: (static member IsPositiveInfinity: ^T -> bool) nearPlaneDistance) then - 1G
+                if (^T: (static member IsPositiveInfinity: ^T -> bool) nearPlaneDistance)
+                then - 1G
                 else farPlaneDistance / (nearPlaneDistance - farPlaneDistance)
             create
                 ((1G+1G) * nearPlaneDistance / width) 0G 0G 0G
@@ -484,22 +363,7 @@ module Matrix4x4 =
                 0G 0G 0G (nearPlaneDistance * negFarRange)
             |> Ok
 
-
-type Matrix4x4<'T> with
+type Matrix4x4<'a> with
     static member inline ( + ) (m1, m2) = Matrix4x4.add m1 m2
     static member inline ( * ) (m1, m2) = Matrix4x4.multiply m1 m2
     static member inline (~- ) (m) = Matrix4x4.negate m
-
-type Matrix4x4f = Matrix4x4<single>
-module Matrix4x4f =
-    let ofSystem (sysm: System.Numerics.Matrix4x4) =
-        Matrix4x4.create
-            sysm.M11 sysm.M12 sysm.M13 sysm.M14
-            sysm.M21 sysm.M22 sysm.M23 sysm.M24
-            sysm.M31 sysm.M32 sysm.M33 sysm.M34
-            sysm.M41 sysm.M42 sysm.M43 sysm.M44
-
-    let toSystem m =
-        m |> Matrix4x4.toTuple |> System.Numerics.Matrix4x4
-
-type Matrix4x4d = Matrix4x4<double>

@@ -3,5 +3,6 @@ source https://api.nuget.org/v3/index.json
 storage: none
 framework: netcore3.1, netstandard2.0, netstandard2.1
 nuget FSharp.Core
+nuget Hopac
 nuget OpenTK.NetStandard 1.0.4
 nuget System.Drawing.Common 4.7.0

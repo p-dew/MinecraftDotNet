@@ -5,14 +5,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Core.fs" />
-    <Compile Include="Reader.fs" />
-    <Compile Include="Math.fsi" />
-    <Compile Include="Math.fs" />
+    <Compile Include="Math\Math.fs" />
+    <Compile Include="Math\Misc.fs" />
+    <Compile Include="Math\Aliases.fs" />
     <Compile Include="Resources.fs" />
     <Compile Include="Blocks.fs" />
     <Compile Include="Input.fs" />
     <Compile Include="Items.fs" />
     <Compile Include="Entities.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MinecraftDotNet.Share\MinecraftDotNet.Share.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

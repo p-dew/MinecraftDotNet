@@ -36,10 +36,10 @@ module Vector3 =
     val inline forward< ^a when ^a: (static member Zero: ^a) and ^a: (static member One: ^a)> : Vector3< ^a>
     val inline backward< ^a when ^a: (static member Zero: ^a) and ^a: (static member One: ^a) and ^a: (static member (~-): ^a -> ^a)> : Vector3< ^a>
     
-    val inline length< ^a, ^b, ^c when
-                       ^a: (static member ( * ): ^a -> ^a -> ^c) and
-                       ^c: (static member ( + ): ^c -> ^c -> ^c) and
-                       ^c: (static member Sqrt: ^c -> ^b) >
+    val inline length< ^a, ^c, ^b when
+                       ^a : (static member ( * ) :  ^a *  ^a ->  ^c) and
+                       ^c : (static member ( + ) :  ^c *  ^c ->  ^c) and
+                       ^c : (static member Sqrt :  ^c ->  ^b) >
         : Vector3< ^a> -> ^b
     
     val inline negate< ^a when ^a: (static member ( ~- ): ^a -> ^a) >
@@ -52,7 +52,7 @@ module Vector3 =
                         (^a or ^b): (static member ( - ): ^a -> ^b -> ^c) >
         : Vector3< ^a> -> Vector3< ^b> -> Vector3< ^c>
     val inline scale< ^a, ^b, ^c when
-                     (^a or ^b): (static member ( * ): ^a -> ^b -> ^c)>
+                     (^a or ^b): (static member ( * ):  ^a -> ^b -> ^c)>
         : Vector3< ^a> -> ^b -> Vector3< ^c>
     
     val inline cross< ^a, ^b, ^d, ^c when
@@ -105,11 +105,12 @@ module Vector2 =
     val inline reduce: ('a -> 'a -> 'a) -> Vector2<'a> -> 'a
     
     // Math
-    val inline length< ^a, ^b, ^c when
-                   ^a: (static member ( * ): ^a -> ^a -> ^c) and
-                   ^c: (static member ( + ): ^c -> ^c -> ^c) and
-                   ^c: (static member Sqrt: ^c -> ^b) >
+        val inline length< ^a, ^c, ^b when
+                       ^a : (static member ( * ) :  ^a *  ^a ->  ^c) and
+                       ^c : (static member ( + ) :  ^c *  ^c ->  ^c) and
+                       ^c : (static member Sqrt :  ^c ->  ^b) >
         : Vector2< ^a> -> ^b
+    
     val inline add< ^a, ^b, ^c when
                    (^a or ^b): (static member ( + ): ^a -> ^b -> ^c) >
         : Vector2< ^a> -> Vector2< ^b> -> Vector2< ^c>

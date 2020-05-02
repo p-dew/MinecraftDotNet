@@ -150,11 +150,6 @@ type Key =
     | LastKey = 131s // 0x00000083
 
 module Key =
-    let private lastKey =
-        System.Enum.GetValues(typeof<Key>)
-        |> Seq.cast<Key>
-        |> Seq.sort
-        |> Seq.last
     
     let ofShort (code: int16) : Key option =
         if code >= 0s && code < (LanguagePrimitives.EnumToValue Key.LastKey)

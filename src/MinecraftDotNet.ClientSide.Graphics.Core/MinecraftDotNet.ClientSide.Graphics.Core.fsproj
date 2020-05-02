@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Camera.fs" />
-    <Compile Include="Window.fs" />
     <Compile Include="Mesh.fs" />
     <Compile Include="Material.fs" />
     <Compile Include="Graphics.fs" />
