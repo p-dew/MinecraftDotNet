@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
     </PropertyGroup>
-
-    <ItemGroup>
-      <PackageReference Include="OpenTK.NetStandard" Version="1.0.4" />
-    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.csproj" />
@@ -17,6 +13,11 @@
       <Content Include="Data\Shaders\BlockShader.glsl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
+      <PackageReference Include="ObjectTK.NetStandard.Tools" Version="1.0.0" />
     </ItemGroup>
 
 </Project>
