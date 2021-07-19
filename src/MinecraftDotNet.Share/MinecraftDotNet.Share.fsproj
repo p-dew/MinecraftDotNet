@@ -8,6 +8,8 @@
         <Compile Include="Option.fs" />
         <Compile Include="Result.fs" />
         <Compile Include="Reader.fs" />
+        <Compile Include="Infixes.fs" />
+        <Compile Include="Other.fs" />
     </ItemGroup>
 
 </Project>

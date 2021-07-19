@@ -1,9 +1,5 @@
 module Result
 
-type X = int
-
 let tryWithExn f =
-    try
-        let x = f ()
-        Ok x
+    try f () |> Ok
     with e -> Error e

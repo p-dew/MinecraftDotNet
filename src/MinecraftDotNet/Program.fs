@@ -29,91 +29,93 @@
 
 open System
 open System.Diagnostics
-open System.Text.Json
-open MinecraftDotNet.Core.Math
+open System.Threading
 
-type Tick = int64
+open Hopac
+open Hopac.Infixes
 
-type Dimension =
-    { Name: string }
-
-type World =
-    { Name: string
-      Time: Tick }
-
-module World =
-    let incrTime world = { world with Time = world.Time + 1L }
-
-type LogicAgentState =
-    { World: World }
-
-type LogicMsg =
-    | Tick of World
-
-let holdMsg (inbox: MailboxProcessor<'msg>) updater (init: 'state) =
-    let Tick = 50L * TimeSpan.TicksPerMillisecond
-    let rec loop (t: int64) state = async {
-        let sw = Stopwatch()
-        sw.Start()
-        match! inbox.TryReceive(t / TimeSpan.TicksPerMillisecond |> int) with
-        | None -> return state
-        | Some msg ->
-            let! state' = updater msg state
-            sw.Stop()
-            return! loop (max 0L <| t - sw.ElapsedTicks) state'
-    }
-    loop Tick init
+open MinecraftDotNet.Core.World
+open MinecraftDotNet.Fp
+open MinecraftDotNet
+//open MinecraftDotNet.State
 
 
-//module Mailbox =
-//    /// Remove all exclude last messages from agent's queue
-//    let last predicate (inbox: MailboxProcessor<_>) =
-//        let length = inbox.CurrentQueueLength
-//        async {
-//            
-//            inbox.Scan(fun msg -> async {
-//                if predicate msg
-//                then Some msg
-//                else None
-//            }
-//            )
-//        }
+let render (state: State.State) frameTime =
+    printfn "[%.2f] %A ; %A" frameTime state.World.Time state.Counter
+
+
+let [<Literal>] Fps = 60
+let [<Literal>] Tps = 20
+
+let updating (initState: State.State) stateRef =
+    
+    let sw = Stopwatch()
+    sw.Start()
+    
+    let rec loop state =
+        let sleepT = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / int64 Tps) - sw.Elapsed |> max TimeSpan.Zero
+        Thread.Sleep(sleepT)
+        sw.Restart()
+        let (u, ()) = UpdateM.run State.update state
+        let state = UpdateM.apply state u
+        lock stateRef.contents (fun() ->
+            stateRef := state
+        )
+        
+        loop state
+    
+    loop initState
+
+let rendering (initState: State.State) stateRef =
+    let sw = Stopwatch()
+    sw.Start()
+    
+    let rec loop () =
+        let sleepT = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / int64 Fps) - sw.Elapsed |> max TimeSpan.Zero
+        Thread.Sleep(sleepT)
+        let frameTime = sw.Elapsed.TotalMilliseconds
+        lock stateRef.contents (fun() ->
+            render !stateRef frameTime
+        )
+        sw.Restart()
+        loop ()
+    
+    loop ()
+
+
+let runMinecraft updating rendering initState =
+    let stateRef = ref initState
+    
+    let logicThread = Thread(fun() ->
+        updating initState stateRef
+    )
+    
+    let renderThread = Thread(fun() ->
+        rendering initState stateRef
+    )
+    
+    logicThread.Start()
+    renderThread.Start()
+    
+    logicThread.Join()
+    renderThread.Join()
+    
+    ()
 
 [<EntryPoint>]
 let main argv =
     
-    async {
-        
-        let world: World = { Name = "MyWorld"; Time = 0L }
-        
-        let dependedAgent =
-            MailboxProcessor.Start(fun inbox ->
-                let rec loop () = async {
-//                    do! seekMessages inbox
-                    match! inbox.Receive() with
-                    | Tick state ->
-                        do! Async.Sleep 1000
-                        printfn "(%i)\n%A" inbox.CurrentQueueLength state
-                        return! loop ()
-                }
-                loop ()
-            )
-        
-        let logicAgent =
-            let update state = async {
-                do! Async.Sleep 50
-                return state
-            }
-            MailboxProcessor<LogicMsg>.Start(fun inbox ->
-                let rec loop state = async {
-                    let! state' = update state
-                    dependedAgent.Post (Tick state')
-                    return! loop (World.incrTime state')
-                }
-                loop world
-            )
-        
-        do! (System.Threading.Tasks.Task.Delay(-1) |> Async.AwaitTask)
-    }
-    |> Async.RunSynchronously
+    let dim0 = Dimension.create "DIM0"
+    
+    let world =
+        { Name = "New World"
+          Time = 0L
+          Dimensions = [| dim0 |] }
+    
+    let initState =
+        { State.World = world
+          State.Counter = 0 }
+    
+    runMinecraft updating rendering initState
+    
     0

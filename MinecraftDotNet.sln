@@ -7,17 +7,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{27841E
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Core", "src\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj", "{9A15BCCD-F108-4FC5-BB29-46F4B1E0304C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.ClientSide.Graphics.Core", "src\MinecraftDotNet.ClientSide.Graphics.Core\MinecraftDotNet.ClientSide.Graphics.Core.fsproj", "{85FCF7A1-8738-43A3-9443-80ACE2D0DBD5}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.ClientSide", "src\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.fsproj", "{E711148A-0608-4F25-8D9A-27649876DF8A}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet", "src\MinecraftDotNet\MinecraftDotNet.fsproj", "{86302D06-0B8F-4059-A196-210EA2B98F7E}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.ClientSide.Graphics.OpenGl", "src\MinecraftDotNet.ClientSide.Graphics.OpenGl\MinecraftDotNet.ClientSide.Graphics.OpenGl.fsproj", "{D53BF42C-6381-445C-88B5-6672836D1DE3}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Share", "src\MinecraftDotNet.Share\MinecraftDotNet.Share.fsproj", "{E6EE060A-BAAA-4F13-9FC7-3ED2969FD0A1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibrary1", "ClassLibrary1\ClassLibrary1.csproj", "{55BE4556-8438-4C51-9048-F60011216FC8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,30 +21,14 @@ Global
 		{9A15BCCD-F108-4FC5-BB29-46F4B1E0304C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A15BCCD-F108-4FC5-BB29-46F4B1E0304C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A15BCCD-F108-4FC5-BB29-46F4B1E0304C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{85FCF7A1-8738-43A3-9443-80ACE2D0DBD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{85FCF7A1-8738-43A3-9443-80ACE2D0DBD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{85FCF7A1-8738-43A3-9443-80ACE2D0DBD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{85FCF7A1-8738-43A3-9443-80ACE2D0DBD5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E711148A-0608-4F25-8D9A-27649876DF8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E711148A-0608-4F25-8D9A-27649876DF8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E711148A-0608-4F25-8D9A-27649876DF8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E711148A-0608-4F25-8D9A-27649876DF8A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{86302D06-0B8F-4059-A196-210EA2B98F7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{86302D06-0B8F-4059-A196-210EA2B98F7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86302D06-0B8F-4059-A196-210EA2B98F7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86302D06-0B8F-4059-A196-210EA2B98F7E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D53BF42C-6381-445C-88B5-6672836D1DE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D53BF42C-6381-445C-88B5-6672836D1DE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D53BF42C-6381-445C-88B5-6672836D1DE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D53BF42C-6381-445C-88B5-6672836D1DE3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E6EE060A-BAAA-4F13-9FC7-3ED2969FD0A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E6EE060A-BAAA-4F13-9FC7-3ED2969FD0A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6EE060A-BAAA-4F13-9FC7-3ED2969FD0A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6EE060A-BAAA-4F13-9FC7-3ED2969FD0A1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{55BE4556-8438-4C51-9048-F60011216FC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{55BE4556-8438-4C51-9048-F60011216FC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{55BE4556-8438-4C51-9048-F60011216FC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{55BE4556-8438-4C51-9048-F60011216FC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection

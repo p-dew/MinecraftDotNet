@@ -1,7 +1,5 @@
 module MinecraftDotNet.Core.Items
 
-open MinecraftDotNet.Core.Blocks
-
 type ItemId = ItemId of string
 
 //type StackSize =
