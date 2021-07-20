@@ -1,7 +1,11 @@
 .idea/
+.ionide/
 
 **/bin/
 **/obj/
+
+.paket/
+paket.lock
 
 MinecraftDotNet.sln.DotSettings
 MinecraftDotNet.sln.DotSettings.user
