@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Fp.fs" />
+    <Compile Include="Nopable.fs" />
+    <Compile Include="State.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="s.fsx" />
+    <Compile Include="foo.fs" />
+  </ItemGroup>
+  <ItemGroup>
+<!--    <ProjectReference Include="..\MinecraftDotNet.ClientSide.Graphics.Core\MinecraftDotNet.ClientSide.Graphics.Core.fsproj" />-->
+<!--    <ProjectReference Include="..\MinecraftDotNet.ClientSide.Graphics.OpenGl\MinecraftDotNet.ClientSide.Graphics.OpenGl.fsproj" />-->
+<!--    <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.fsproj" />-->
+    <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

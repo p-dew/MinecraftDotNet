@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Core.fs" />
+    <Compile Include="Math\Math.fs" />
+    <Compile Include="Math\Misc.fs" />
+    <Compile Include="Math\Aliases.fs" />
+    <Compile Include="Resources.fs" />
+    <Compile Include="Input.fs" />
+    <Compile Include="Items.fs" />
+    <Compile Include="Entities.fs" />
+    <Compile Include="World\Types.fs" />
+    <Compile Include="World\Block.fs" />
+    <Compile Include="World\Chunk.fs" />
+    <Compile Include="World\Dimension.fs" />
+    <Compile Include="World\World.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MinecraftDotNet.Share\MinecraftDotNet.Share.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

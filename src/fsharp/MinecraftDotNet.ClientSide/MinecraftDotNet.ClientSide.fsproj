@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Client.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MinecraftDotNet.ClientSide.Graphics.Core\MinecraftDotNet.ClientSide.Graphics.Core.fsproj" />
+    <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>
