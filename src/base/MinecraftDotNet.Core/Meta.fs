@@ -1,0 +1,2 @@
+namespace MinecraftDotNet.Core
+

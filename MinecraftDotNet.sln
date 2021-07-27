@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinecraftDotNet.ClientSide"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinecraftDotNet.ServerSide", "MinecraftDotNet.ServerSide\MinecraftDotNet.ServerSide.csproj", "{D19A723C-9D58-435F-9F13-8FD03403A08F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "base", "base", "{73FEF32E-472B-4EC4-B27F-AD5D492B59B7}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MinecraftDotNet.Core", "src\base\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj", "{AFEF86F4-EB3E-4B24-8D1E-D578311B1862}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,7 +34,12 @@ Global
 		{D19A723C-9D58-435F-9F13-8FD03403A08F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D19A723C-9D58-435F-9F13-8FD03403A08F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D19A723C-9D58-435F-9F13-8FD03403A08F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFEF86F4-EB3E-4B24-8D1E-D578311B1862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFEF86F4-EB3E-4B24-8D1E-D578311B1862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFEF86F4-EB3E-4B24-8D1E-D578311B1862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFEF86F4-EB3E-4B24-8D1E-D578311B1862}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{AFEF86F4-EB3E-4B24-8D1E-D578311B1862} = {73FEF32E-472B-4EC4-B27F-AD5D492B59B7}
 	EndGlobalSection
 EndGlobal

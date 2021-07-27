@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Folder Include="Math" />
+        <Compile Include="Items\ItemInfo.fs" />
+        <Compile Include="Items\ItemStack.fs" />
+        <Compile Include="Items\IBlockRepository.fs" />
+        <Compile Include="Blocks\BlockInfo.fs" />
+        <Compile Include="Meta.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
+    </ItemGroup>
+
+</Project>
