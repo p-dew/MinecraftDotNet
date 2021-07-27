@@ -6,12 +6,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Meta.fs" />
         <Folder Include="Math" />
         <Compile Include="Items\ItemInfo.fs" />
         <Compile Include="Items\ItemStack.fs" />
-        <Compile Include="Items\IBlockRepository.fs" />
-        <Compile Include="Blocks\BlockInfo.fs" />
-        <Compile Include="Meta.fs" />
+        <Compile Include="Blocks\Blocks.fs" />
+        <Compile Include="Blocks\Chunks\Chunks.fs" />
+        <Compile Include="Blocks\Chunks\Regions\Regions.fs" />
+        <Compile Include="Blocks\Chunks\Regions\Mca\Mca.fs" />
+        <Compile Include="Blocks\ChunkBlockRepository.fs" />
+        <Compile Include="Worlds\Worlds.fs" />
     </ItemGroup>
 
     <ItemGroup>
