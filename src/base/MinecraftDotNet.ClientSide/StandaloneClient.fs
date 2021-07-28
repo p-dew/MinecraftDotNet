@@ -22,21 +22,26 @@ type StandaloneClient() =
                 )
         )
     
-    let window = new McGameWindow(camera)
+    
+    let chunkRepository =
+        MemoryChunkRepository(ChessChunkGenerator((fun () -> HcBlocks.air), (fun () -> HcBlocks.test0)))
+    let blockRepository = ChunkBlockRepository(chunkRepository)
+    let currentWorld = World(chunkRepository, blockRepository)
+    
+    let chunkRenderer = new SingleBlockChunkRenderer(camera)
+    
+    let window =
+        new McGameWindow(
+            camera, fun () ->
+                HcBlocks.init ()
+                chunkRenderer.InitGl()
+        )
     
     do camera.MoveSpeed <- camera.MoveSpeed / 2f
     do camera.MouseMoveSpeed <- camera.MouseMoveSpeed / 2f
     do camera.SetBehavior(FreeLookBehavior())
     
     do camera.Enable(window)
-    
-    let chunkRepository =
-        MemoryChunkRepository(ChessChunkGenerator(HcBlocks.air, fun () -> HcBlocks.test0))
-    let blockRepository = ChunkBlockRepository(chunkRepository)
-    let currentWorld = World(chunkRepository, blockRepository)
-    
-    let chunkRenderer = new SingleBlockChunkRenderer(camera)
-    
     do window.AddRenderAction(fun projection modelView ->
         let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
         let chunk = (chunkRepository :> IChunkRepository).GetChunk(chunkCoords)
@@ -45,8 +50,6 @@ type StandaloneClient() =
     )
     
     member _.Run() =
-        HcBlocks.init ()
-        chunkRenderer.InitGl()
         window.Run()
     
     interface IDisposable with

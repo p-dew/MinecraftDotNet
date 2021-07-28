@@ -101,7 +101,7 @@ module ChunkGenerators =
                             let inline f a = (a + 1) % 2 = 0
                             let newBlock =
                                 if f x <> f y <> f z then
-                                    airBlock
+                                    airBlock ()
                                 else
                                     blockProvider ()
                             newChunk.Blocks.[x, y, z] <- newBlock

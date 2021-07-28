@@ -13,9 +13,17 @@
         <Content Include="Data\Shaders\BlockShader.Vertex.glsl" />
         <Content Include="Data\Shaders\BlockShader.Fragment.glsl" />
     </ItemGroup>
-    
+     
     <ItemGroup>
-        <None Remove="Data\Shaders\BlockShader.glsl" />
+        <None Remove="Data\Shaders\BlockShader.Vertex.glsl" />
+        <Content Include="Data\Shaders\BlockShader.Vertex.glsl">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        
+        <None Remove="Data\Shaders\BlockShader.Fragment.glsl" />
+        <Content Include="Data\Shaders\BlockShader.Fragment.glsl">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>

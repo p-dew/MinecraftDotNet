@@ -8,7 +8,7 @@ let main args =
     printfn "Minecraft .NET Edition | 0.0.0-indev"
     
     try
-        use client = new StandaloneClient()
+        let client = new StandaloneClient()
         client.Run()
     with
     | e ->

@@ -9,7 +9,7 @@ open OpenTK.Graphics.OpenGL4
 
 type RenderAction = delegate of projection: Matrix4 * modelView: Matrix4 -> unit
 
-type McGameWindow(camera: Camera) =
+type McGameWindow(camera: Camera, onLoad) =
     inherit DerpWindow(1024, 720, GraphicsMode.Default, "Minecraft .NET Edition")
     
     let renderActions = Queue<RenderAction>()
@@ -26,6 +26,8 @@ type McGameWindow(camera: Camera) =
         
         GL.Enable(EnableCap.DepthTest)
         GL.DepthFunc(DepthFunction.Less)
+        
+        onLoad ()
     
     override this.OnRenderFrame(e) =
         base.OnRenderFrame(e)
