@@ -1,5 +1,6 @@
 namespace MinecraftDotNet.Core.Worlds
 
+open MinecraftDotNet.Core
 open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks
 
@@ -31,4 +32,5 @@ type World(chunkRepository, blockRepository) =
         
         [<CLIEvent>]
         member _.BlockPlaced = blockPlacedEvent.Publish
+        [<CLIEvent>]
         member _.PlayerJoined = playerJoinedEvent.Publish

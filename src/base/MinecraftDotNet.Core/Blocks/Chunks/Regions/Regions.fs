@@ -4,8 +4,8 @@ open MinecraftDotNet.Core.Blocks.Chunks
 
 //
 
-type RegionSize =
-    {  }
+//type RegionSize =
+//    {  }
 
 // RegionCoords
 

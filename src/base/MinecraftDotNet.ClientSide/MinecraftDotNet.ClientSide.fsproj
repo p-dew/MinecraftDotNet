@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="McGameWindow.fs" />
+        <Compile Include="Graphics\Shaders\BlockProgram.fs" />
+        <Compile Include="Graphics\Graphics.fs" />
+        <Compile Include="StandaloneClient.fs" />
+        <Content Include="Data\Shaders\BlockShader.Vertex.glsl" />
+        <Content Include="Data\Shaders\BlockShader.Fragment.glsl" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Remove="Data\Shaders\BlockShader.glsl" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MinecraftDotNet.Core\MinecraftDotNet.Core.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
+        <PackageReference Include="ObjectTK.NetStandard.Tools" Version="1.0.0" />
+    </ItemGroup>
+    
+</Project>
