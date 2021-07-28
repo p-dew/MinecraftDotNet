@@ -94,6 +94,7 @@ module ChunkGenerators =
     type ChessChunkGenerator(airBlock, blockProvider) =
         interface IChunkGenerator with
             member this.Generate(coords) =
+                printfn "Generate chunk"
                 let newChunk = Chunk()
                 for x in 0 .. Chunk.Size.Width - 1 do
                     for y in 0 .. Chunk.Size.Height - 1 do

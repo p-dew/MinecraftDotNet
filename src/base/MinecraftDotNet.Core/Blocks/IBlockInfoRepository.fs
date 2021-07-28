@@ -1,6 +1,7 @@
 namespace MinecraftDotNet.Core.Blocks
 
 open System.Drawing
+open System.Drawing
 open MinecraftDotNet.Core.Items
 open ObjectTK.Textures
 open OpenTK.Graphics.OpenGL
@@ -19,11 +20,13 @@ module BlockInfoRepositoryExtensions =
 type DefaultBlockInfoRepository() =
     
     let loadBlockInfo (texPath: string) id =
-        let bitmap = new Bitmap(texPath)
-        let tex = new Texture2D(SizedInternalFormat.Rgba8, bitmap.Width, bitmap.Height)
-        tex.SetParameter(TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
-        tex.SetParameter(TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
-        tex.LoadBitmap(bitmap)
+        let tex = using (new Bitmap(texPath)) (fun bitmap ->
+            let tex = new Texture2D(SizedInternalFormat.Rgba8, bitmap.Width, bitmap.Height)
+            tex.SetParameter(TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+            tex.SetParameter(TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
+            tex.LoadBitmap(bitmap)
+            tex
+        )
         let itemInfo =
             { Id = ItemId id
               MaxStack = 64 }

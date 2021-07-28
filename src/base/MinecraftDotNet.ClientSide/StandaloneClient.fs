@@ -24,8 +24,9 @@ type StandaloneClient() =
     
     
     let blockInfoRepository = DefaultBlockInfoRepository()
+    let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
     let chunkRepository =
-        MemoryChunkRepository(ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0)))
+        MemoryChunkRepository(chunkGenerator)
     let blockRepository = ChunkBlockRepository(chunkRepository)
     let currentWorld = World(chunkRepository, blockRepository)
     
