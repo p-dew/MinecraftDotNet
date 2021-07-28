@@ -23,8 +23,9 @@ type StandaloneClient() =
         )
     
     
+    let blockInfoRepository = DefaultBlockInfoRepository()
     let chunkRepository =
-        MemoryChunkRepository(ChessChunkGenerator((fun () -> HcBlocks.air), (fun () -> HcBlocks.test0)))
+        MemoryChunkRepository(ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0)))
     let blockRepository = ChunkBlockRepository(chunkRepository)
     let currentWorld = World(chunkRepository, blockRepository)
     
@@ -33,7 +34,7 @@ type StandaloneClient() =
     let window =
         new McGameWindow(
             camera, fun () ->
-                HcBlocks.init ()
+                blockInfoRepository.InitGl()
                 chunkRenderer.InitGl()
         )
     
