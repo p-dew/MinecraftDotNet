@@ -148,26 +148,25 @@ type SingleBlockChunkRenderer(camera: Camera) =
     let mutable mvpMatrixUniformLocation: int = Unchecked.defaultof<_>
     let mutable sideUniformLocation: int = Unchecked.defaultof<_>
 
-    let renderCube (context: ChunkRenderContext) (blockInfo: BlockInfo) x y z =
-//        program.MvpMatrix.Set(
-//            Matrix4.CreateTranslation(Vector3(x, y, z))
-//            * context.ViewMatrix
-//            * context.ProjectionMatrix
-//        )
-        let mvpMatrix =
-            Matrix4.CreateTranslation(Vector3(x, y, z))
-            * context.ViewMatrix
-            * context.ProjectionMatrix
-        GL.UniformMatrix4(mvpMatrixUniformLocation, false, ref mvpMatrix)
 
-        for i in 0 .. 2 do
-            let tex = blockInfo.Sides.Textures.[i]
-//            program.Side.BindTexture(TextureUnit.Texture0, tex)
-            let texUnit = TextureUnit.Texture0
-            GL.Uniform1(sideUniformLocation, int texUnit)
-            tex.Bind(texUnit)
+    let renderCube  =
+        let mvpMatrixRef = ref Unchecked.defaultof<_>
+        fun (context: ChunkRenderContext) (blockInfo: BlockInfo) x y z ->
+            let mvpMatrix =
+                Matrix4.CreateTranslation(Vector3(x, y, z))
+                * context.ViewMatrix
+                * context.ProjectionMatrix
+            mvpMatrixRef := mvpMatrix
+            GL.UniformMatrix4(mvpMatrixUniformLocation, false, mvpMatrixRef)
 
-            vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4)
+            for i in 0 .. 2 do
+                let tex = blockInfo.Sides.Textures.[i]
+                // program.Side.BindTexture(TextureUnit.Texture0, tex)
+                let texUnit = TextureUnit.Texture0
+                GL.Uniform1(sideUniformLocation, int texUnit)
+                tex.Bind(texUnit)
+
+                vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4)
 
     interface IGlInitializable with
         member this.InitGl() =
