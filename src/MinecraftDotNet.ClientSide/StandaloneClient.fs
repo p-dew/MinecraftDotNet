@@ -18,7 +18,7 @@ open MinecraftDotNet.Core.Worlds
 open MinecraftDotNet.ClientSide.Graphics
 
 
-type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glDeps: IGlInitializable seq) =
+type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glDeps: IGlInitializable seq, onClose) =
 
     let camera =
         Camera(
@@ -38,7 +38,6 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
     do camera.MouseMoveSpeed <- camera.MouseMoveSpeed / 2f
     do camera.SetBehavior(FreeLookBehavior())
 
-
     let mutable window: McGameWindow = Unchecked.defaultof<_>
 
     let windowThread =
@@ -56,6 +55,9 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
                 let context = { ProjectionMatrix = projection; ViewMatrix = modelView }
                 (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
             )
+
+            window.Closed.Add(ignore >> onClose)
+
             window.Run()
         )
 

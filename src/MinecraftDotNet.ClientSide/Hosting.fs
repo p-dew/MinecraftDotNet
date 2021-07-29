@@ -10,13 +10,18 @@ open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkGenerators
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkRepositories
 
-type McClientHostedService(loggerFactory: ILoggerFactory) =
+type McClientHostedService(loggerFactory: ILoggerFactory, lifetime: IHostApplicationLifetime) =
     let logger = loggerFactory.CreateLogger<McClientHostedService>()
     let blockInfoRepository = DefaultBlockInfoRepository(loggerFactory.CreateLogger())
     let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
     let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
     let blockRepository = ChunkBlockRepository(chunkRepository)
-    let client = new StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, [blockInfoRepository])
+
+    let onClosed () =
+        lifetime.StopApplication()
+
+    let client = new StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, [blockInfoRepository], onClosed)
+
     interface IHostedService with
         member this.StartAsync(cancellationToken) = unitTask {
             logger.LogInformation($"Run {nameof McClientHostedService}")
