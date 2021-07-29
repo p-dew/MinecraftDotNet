@@ -20,10 +20,11 @@ type McClientHostedService(loggerFactory: ILoggerFactory) =
     interface IHostedService with
         member this.StartAsync(cancellationToken) = unitTask {
             logger.LogInformation($"Run {nameof McClientHostedService}")
-            client.Run()
+            client.Start()
         }
         member this.StopAsync(cancellationToken) = unitTask {
             logger.LogInformation($"Stop {nameof McClientHostedService}")
+            client.Stop()
         }
 
 

@@ -2,6 +2,7 @@ namespace MinecraftDotNet.ClientSide
 
 open System
 
+open System.Threading
 open Microsoft.Extensions.Logging
 
 open ObjectTK.Tools.Cameras
@@ -18,7 +19,7 @@ open MinecraftDotNet.ClientSide.Graphics
 
 
 type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glDeps: IGlInitializable seq) =
-    
+
     let camera =
         Camera(
             State =
@@ -27,43 +28,44 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
                     LookAt = Vector3.One
                 )
         )
-    
-//    let loggerFactory =
-//        LoggerFactory.Create(fun builder ->
-//            builder.AddConsole() |> ignore
-//            builder.AddSimpleConsole() |> ignore
-//        )
-//    
-//    let blockInfoRepository = DefaultBlockInfoRepository(loggerFactory.CreateLogger())
-//    let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
-//    let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
-//    let blockRepository = ChunkBlockRepository(chunkRepository)
+
     let currentWorld = World(chunkRepository, blockRepository)
-    
+
     let chunkRenderer = new SingleBlockChunkRenderer(camera)
-    
-    let window =
-        new McGameWindow(
-            camera, fun () ->
-                glDeps |> Seq.iter (fun g -> g.InitGl())
-                (chunkRenderer :> IGlInitializable).InitGl()
-        )
-    
+
+
     do camera.MoveSpeed <- camera.MoveSpeed / 2f
     do camera.MouseMoveSpeed <- camera.MouseMoveSpeed / 2f
     do camera.SetBehavior(FreeLookBehavior())
-    
-    do camera.Enable(window)
-    do window.AddRenderAction(fun projection modelView ->
-        let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
-        let chunk = (chunkRepository :> IChunkRepository).GetChunk(chunkCoords)
-        let context = { ProjectionMatrix = projection; ViewMatrix = modelView }
-        (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
-    )
-    
-    member _.Run() =
-        window.Run()
-    
+
+
+    let mutable window: McGameWindow = Unchecked.defaultof<_>
+
+    let windowThread =
+        Thread(fun () ->
+            window <-
+                new McGameWindow(
+                    camera, fun () ->
+                        glDeps |> Seq.iter (fun g -> g.InitGl())
+                        (chunkRenderer :> IGlInitializable).InitGl()
+                )
+            camera.Enable(window)
+            window.AddRenderAction(fun projection modelView ->
+                let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
+                let chunk = (chunkRepository :> IChunkRepository).GetChunk(chunkCoords)
+                let context = { ProjectionMatrix = projection; ViewMatrix = modelView }
+                (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
+            )
+            window.Run()
+        )
+
+    member _.Start() =
+        windowThread.Start()
+
+    member this.Stop(): unit =
+        window.Close()
+        windowThread.Join()
+
     interface IDisposable with
         member this.Dispose() =
             window.Dispose()
