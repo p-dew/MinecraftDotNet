@@ -20,7 +20,7 @@ module BlockInfoRepositoryExtensions =
 
 
 type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
-    
+
     let loadBlockInfo (texPath: string) id =
         logger.LogDebug($"Load new BlockInfo(ItemId = {id}; TexPath = {texPath})")
         let tex = using (new Bitmap(texPath)) (fun bitmap ->
@@ -41,20 +41,21 @@ type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
     let mutable _air = Unchecked.defaultof<_>
     let mutable _dirt = Unchecked.defaultof<_>
     let mutable _test0 = Unchecked.defaultof<_>
-    
+
     interface IGlInitializable with
         member this.InitGl() =
             _dirt <- loadBlockInfo "./assets/textures/dirt.png" "dirt"
             _test0 <- loadBlockInfo "./assets/textures/test0.png" "test0"
-            
-            let airBitmap = new Bitmap(16, 16)
-            let mutable airTex = new Texture2D(SizedInternalFormat.Rgba8, airBitmap.Width, airBitmap.Height)
-            airTex.LoadBitmap(airBitmap)
-            airTex <- null
+
+//            let airBitmap = new Bitmap(16, 16)
+//            let mutable airTex = new Texture2D(SizedInternalFormat.Rgba8, airBitmap.Width, airBitmap.Height)
+//            airTex.LoadBitmap(airBitmap)
+//            airTex <- null
+            let airTex = null
             _air <-
                 { ItemInfo = { Id = ItemId "air"; MaxStack = 0 }
                   Sides = BlockSides(Array.replicate 6 airTex) }
-    
+
     interface IBlockInfoRepository with
         member this.GetByItemId(itemId) =
             match itemId with
