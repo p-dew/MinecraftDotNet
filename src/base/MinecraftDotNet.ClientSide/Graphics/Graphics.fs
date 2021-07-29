@@ -3,6 +3,7 @@ namespace MinecraftDotNet.ClientSide.Graphics
 open System
 open System.IO
 open MinecraftDotNet.ClientSide.Graphics.Shaders
+open MinecraftDotNet.Core
 open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks
 open MinecraftDotNet.Core.Items
@@ -162,36 +163,36 @@ type SingleBlockChunkRenderer(camera: Camera) =
             
             vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4)
     
-    
-    member this.InitGl() =
-//        program <- ProgramFactory.Create<BlockProgram>()
-        programHandle <-
-            ShaderProgram.create
-                (File.ReadAllText "./Data/Shaders/BlockShader.Vertex.glsl")
-                (File.ReadAllText "./Data/Shaders/BlockShader.Fragment.glsl")
-        mvpMatrixUniformLocation <- GL.GetUniformLocation(programHandle, "MvpMatrix")
-        sideUniformLocation <- GL.GetUniformLocation(programHandle, "Side")
-        
-        cubeVertexBuffer <- new Buffer<_>()
-        cubeVertexBuffer.Init(BufferTarget.ElementArrayBuffer, cubeVertices)
-        
-        cubeElementBuffer <- new Buffer<_>()
-        cubeElementBuffer.Init(BufferTarget.ArrayBuffer, cubeEbo)
-        
-        cubeUvBuffer <- new Buffer<_>()
-        cubeUvBuffer.Init(BufferTarget.ArrayBuffer, cubeUv)
-        
-        vao <- new VertexArray()
-        vao.Bind()
-        
-        
-//        vao.BindAttribute(program.InVertex, cubeVertexBuffer)
-        vao.BindAttribute(0, cubeVertexBuffer, 3, VertexAttribPointerType.Double, 0, 0, false)
-        
-//        vao.BindAttribute(program.InUv, cubeUvBuffer)
-        vao.BindAttribute(1, cubeUvBuffer, 2, VertexAttribPointerType.Double, 0, 0, false)
-        
-        // vao.BindElementBuffer(cubeElementBuffer)
+    interface IGlInitializable with
+        member this.InitGl() =
+    //        program <- ProgramFactory.Create<BlockProgram>()
+            programHandle <-
+                ShaderProgram.create
+                    (File.ReadAllText "./Data/Shaders/BlockShader.Vertex.glsl")
+                    (File.ReadAllText "./Data/Shaders/BlockShader.Fragment.glsl")
+            mvpMatrixUniformLocation <- GL.GetUniformLocation(programHandle, "MvpMatrix")
+            sideUniformLocation <- GL.GetUniformLocation(programHandle, "Side")
+            
+            cubeVertexBuffer <- new Buffer<_>()
+            cubeVertexBuffer.Init(BufferTarget.ElementArrayBuffer, cubeVertices)
+            
+            cubeElementBuffer <- new Buffer<_>()
+            cubeElementBuffer.Init(BufferTarget.ArrayBuffer, cubeEbo)
+            
+            cubeUvBuffer <- new Buffer<_>()
+            cubeUvBuffer.Init(BufferTarget.ArrayBuffer, cubeUv)
+            
+            vao <- new VertexArray()
+            vao.Bind()
+            
+            
+    //        vao.BindAttribute(program.InVertex, cubeVertexBuffer)
+            vao.BindAttribute(0, cubeVertexBuffer, 3, VertexAttribPointerType.Double, 0, 0, false)
+            
+    //        vao.BindAttribute(program.InUv, cubeUvBuffer)
+            vao.BindAttribute(1, cubeUvBuffer, 2, VertexAttribPointerType.Double, 0, 0, false)
+            
+            // vao.BindElementBuffer(cubeElementBuffer)
     
     interface IChunkRenderer with
         member this.Render(context, chunk, chunkCoords) =

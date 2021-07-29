@@ -94,7 +94,6 @@ module ChunkGenerators =
     type ChessChunkGenerator(airBlock, blockProvider) =
         interface IChunkGenerator with
             member this.Generate(coords) =
-                printfn "Generate chunk"
                 let newChunk = Chunk()
                 for x in 0 .. Chunk.Size.Width - 1 do
                     for y in 0 .. Chunk.Size.Height - 1 do
@@ -109,10 +108,12 @@ module ChunkGenerators =
                 newChunk
 
 module ChunkRepositories =
+
+    open Microsoft.Extensions.Logging
     
     // MemoryChunkRepository
     
-    type MemoryChunkRepository(chunkGenerator: IChunkGenerator) =
+    type MemoryChunkRepository(chunkGenerator: IChunkGenerator, logger: ILogger<MemoryChunkRepository>) =
         let generatedChunks = Dictionary()
         
         interface IChunkRepository with
@@ -121,6 +122,7 @@ module ChunkRepositories =
                 | true, chunk ->
                     chunk
                 | false, _ ->
+                    logger.LogDebug($"Generate new Chunk(Coords = ${coords})")
                     let newChunk = chunkGenerator.Generate(coords)
                     generatedChunks.[coords] <- newChunk
                     newChunk

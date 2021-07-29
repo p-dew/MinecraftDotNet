@@ -10,6 +10,7 @@
         <Compile Include="Graphics\Shaders\BlockProgram.fs" />
         <Compile Include="Graphics\Graphics.fs" />
         <Compile Include="StandaloneClient.fs" />
+        <Compile Include="Hosting.fs" />
         <Content Include="Data\Shaders\BlockShader.Vertex.glsl" />
         <Content Include="Data\Shaders\BlockShader.Fragment.glsl" />
     </ItemGroup>
@@ -31,8 +32,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
         <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
         <PackageReference Include="ObjectTK.NetStandard.Tools" Version="1.0.0" />
+        <PackageReference Include="Ply" Version="0.3.1" />
     </ItemGroup>
     
 </Project>

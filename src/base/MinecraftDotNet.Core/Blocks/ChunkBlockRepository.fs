@@ -2,7 +2,6 @@ namespace MinecraftDotNet.Core.Blocks
 
 open MinecraftDotNet.Core
 open MinecraftDotNet.Core.Blocks.Chunks
-open MinecraftDotNet.Core.Items
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkExtensions
 
 type ChunkBlockRepository(chunkRepository: IChunkRepository) =

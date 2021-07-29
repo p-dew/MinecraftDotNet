@@ -8,6 +8,7 @@
     <ItemGroup>
         <Compile Include="Meta.fs" />
         <Compile Include="Player.fs" />
+        <Compile Include="IGlInitializable.fs" />
         <Folder Include="Math" />
         <Compile Include="Items\ItemInfo.fs" />
         <Compile Include="Items\ItemStack.fs" />
@@ -16,11 +17,12 @@
 <!--        <Compile Include="Blocks\Chunks\Regions\Regions.fs" />-->
 <!--        <Compile Include="Blocks\Chunks\Regions\Mca\Mca.fs" />-->
         <Compile Include="Blocks\ChunkBlockRepository.fs" />
-        <Compile Include="Blocks\IBlockInfoRepository.fs" />
+        <Compile Include="Blocks\BlockInfoRepository.fs" />
         <Compile Include="Worlds\Worlds.fs" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
       <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
     </ItemGroup>
 

@@ -1,17 +1,23 @@
 namespace MinecraftDotNet.ClientSide
 
 open System
-open MinecraftDotNet.ClientSide.Graphics
+
+open Microsoft.Extensions.Logging
+
+open ObjectTK.Tools.Cameras
+open OpenTK
+
 open MinecraftDotNet.Core
 open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkGenerators
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkRepositories
 open MinecraftDotNet.Core.Worlds
-open ObjectTK.Tools.Cameras
-open OpenTK
 
-type StandaloneClient() =
+open MinecraftDotNet.ClientSide.Graphics
+
+
+type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glDeps: IGlInitializable seq) =
     
     let camera =
         Camera(
@@ -22,12 +28,16 @@ type StandaloneClient() =
                 )
         )
     
-    
-    let blockInfoRepository = DefaultBlockInfoRepository()
-    let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
-    let chunkRepository =
-        MemoryChunkRepository(chunkGenerator)
-    let blockRepository = ChunkBlockRepository(chunkRepository)
+//    let loggerFactory =
+//        LoggerFactory.Create(fun builder ->
+//            builder.AddConsole() |> ignore
+//            builder.AddSimpleConsole() |> ignore
+//        )
+//    
+//    let blockInfoRepository = DefaultBlockInfoRepository(loggerFactory.CreateLogger())
+//    let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
+//    let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
+//    let blockRepository = ChunkBlockRepository(chunkRepository)
     let currentWorld = World(chunkRepository, blockRepository)
     
     let chunkRenderer = new SingleBlockChunkRenderer(camera)
@@ -35,8 +45,8 @@ type StandaloneClient() =
     let window =
         new McGameWindow(
             camera, fun () ->
-                blockInfoRepository.InitGl()
-                chunkRenderer.InitGl()
+                glDeps |> Seq.iter (fun g -> g.InitGl())
+                (chunkRenderer :> IGlInitializable).InitGl()
         )
     
     do camera.MoveSpeed <- camera.MoveSpeed / 2f
