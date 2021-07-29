@@ -117,7 +117,7 @@ module ChunkRepositories =
         let generatedChunks = Dictionary()
 
         let generateChunk coords =
-            logger.LogDebug($"Generate new Chunk(Coords = ${coords})")
+            logger.LogDebug($"Generate new Chunk(Coords = {coords})")
             let newChunk = chunkGenerator.Generate(coords)
             generatedChunks.[coords] <- newChunk
             newChunk
