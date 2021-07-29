@@ -16,16 +16,16 @@ type ChunkSize =
 type Chunk(blockMetas: IDictionary<BlockCoords, Meta>) =
     let blocks =
         Array3D.zeroCreate Chunk.Size.Width Chunk.Size.Height Chunk.Size.Depth
-    
+
     new() =
         let blockMetas = Dictionary()
         Chunk(blockMetas)
-    
+
     static member Size =
         { Width = 16
           Height = 32
           Depth = 16 }
-    
+
     member _.Blocks: BlockInfo[,,] = blocks
     member _.BlockMetas = blockMetas
 
@@ -71,9 +71,9 @@ module ChunkExtensions =
 //
 
 module ChunkGenerators =
-    
+
     // FlatChunkGenerator
-    
+
     type FlatChunkGenerator(height: int, terrainBlock, airBlock) =
         interface IChunkGenerator with
             member this.Generate(coords) =
@@ -88,9 +88,9 @@ module ChunkGenerators =
                                     terrainBlock
                             newChunk.Blocks.[x, y, z] <- newBlock
                 newChunk
-    
+
     // ChessChunkGenerator
-    
+
     type ChessChunkGenerator(airBlock, blockProvider) =
         interface IChunkGenerator with
             member this.Generate(coords) =
@@ -110,22 +110,24 @@ module ChunkGenerators =
 module ChunkRepositories =
 
     open Microsoft.Extensions.Logging
-    
+
     // MemoryChunkRepository
-    
+
     type MemoryChunkRepository(chunkGenerator: IChunkGenerator, logger: ILogger<MemoryChunkRepository>) =
         let generatedChunks = Dictionary()
-        
+
+        let generateChunk coords =
+            logger.LogDebug($"Generate new Chunk(Coords = ${coords})")
+            let newChunk = chunkGenerator.Generate(coords)
+            generatedChunks.[coords] <- newChunk
+            newChunk
+
         interface IChunkRepository with
             member this.GetChunk(coords) =
                 match generatedChunks.TryGetValue(coords) with
-                | true, chunk ->
-                    chunk
-                | false, _ ->
-                    logger.LogDebug($"Generate new Chunk(Coords = ${coords})")
-                    let newChunk = chunkGenerator.Generate(coords)
-                    generatedChunks.[coords] <- newChunk
-                    newChunk
-            
+                | true, chunk -> chunk
+                | false, _ -> generateChunk coords
+
+
             member this.UnloadChunk(coords) =
                 generatedChunks.Remove(coords) |> ignore

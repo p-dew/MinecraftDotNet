@@ -18,6 +18,7 @@
         <Content Include="assets\textures\test0.png">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
+        <Content Include="appsettings.json" />
     </ItemGroup>
 
     <ItemGroup>

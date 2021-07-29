@@ -1,8 +1,10 @@
 ﻿module MinecraftDotNet.Program
 
+open System
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Configuration
 
 open MinecraftDotNet.ClientSide
 open MinecraftDotNet.ClientSide.Hosting
@@ -20,20 +22,16 @@ let configureMc (mc: unit) : unit =
 
 let createHostBuilder args =
     Host.CreateDefaultBuilder(args)
+        .ConfigureAppConfiguration(fun context builder ->
+            printfn $"EnvironmentName: {context.HostingEnvironment.EnvironmentName}"
+            printfn $"ContentRootPath: {context.HostingEnvironment.ContentRootPath}"
+        )
+        .UseContentRoot("../../../")
         .ConfigureServices(configureServices)
         .ConfigureMc(configureMc)
 
 [<EntryPoint>]
 let main args =
-//    printfn "Minecraft .NET Edition | 0.0.0-indev"
-    
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
     (createHostBuilder args).Build().Run()
-    
-//    try
-//        let client = new StandaloneClient()
-//        client.Run()
-//    with
-//    | e ->
-//        eprintfn $"%A{e}"
-//        reraise ()
     0

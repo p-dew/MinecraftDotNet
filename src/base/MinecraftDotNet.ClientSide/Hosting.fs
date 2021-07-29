@@ -19,6 +19,7 @@ type McClientHostedService(loggerFactory: ILoggerFactory) =
     let client = new StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, [blockInfoRepository])
     interface IHostedService with
         member this.StartAsync(cancellationToken) = unitTask {
+            logger.LogInformation($"Run {nameof McClientHostedService}")
             client.Run()
         }
         member this.StopAsync(cancellationToken) = unitTask {
@@ -27,12 +28,10 @@ type McClientHostedService(loggerFactory: ILoggerFactory) =
 
 
 [<AutoOpen>]
-module ServiceCollectionExtensions =
+module Extensions =
 
     open Microsoft.Extensions.DependencyInjection
-    
-//    type IServiceCollection with
-//        do ()
+
     type IHostBuilder with
         member this.ConfigureMc(configureMc: unit -> unit) =
             this.ConfigureServices(fun services ->
