@@ -7,7 +7,7 @@ open OpenTK
 open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL4
 
-type RenderAction = delegate of projection: Matrix4 * modelView: Matrix4 -> unit
+type RenderAction = delegate of projection: Matrix4 * view: Matrix4 -> unit
 
 type McGameWindow(camera: Camera, onLoad) =
     inherit DerpWindow(1024, 720, GraphicsMode.Default, "Minecraft .NET Edition")

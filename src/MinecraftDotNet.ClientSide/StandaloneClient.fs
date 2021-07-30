@@ -33,6 +33,7 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
 
     let chunkRenderer = new SingleBlockChunkRenderer(camera)
 
+    let directionHelper = new DirectionHelper()
 
     do camera.MoveSpeed <- camera.MoveSpeed / 2f
     do camera.MouseMoveSpeed <- camera.MouseMoveSpeed / 2f
@@ -45,15 +46,22 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
             window <-
                 new McGameWindow(
                     camera, fun () ->
-                        glDeps |> Seq.iter (fun g -> g.InitGl())
-                        (chunkRenderer :> IGlInitializable).InitGl()
+                        [
+                            yield! glDeps
+                            chunkRenderer
+                            directionHelper
+                        ] |> Seq.iter (fun g -> g.InitGl())
                 )
             camera.Enable(window)
-            window.AddRenderAction(fun projection modelView ->
+            window.AddRenderAction(fun projection view ->
                 let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
                 let chunk = (chunkRepository :> IChunkRepository).GetChunk(chunkCoords)
-                let context = { ProjectionMatrix = projection; ViewMatrix = modelView }
+                let context = { ProjectionMatrix = projection; ViewMatrix = view }
                 (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
+            )
+            window.AddRenderAction(fun projection view ->
+                let rotation = view.ClearTranslation()
+                directionHelper.Render(projection, rotation)
             )
 
             window.Closed.Add(ignore >> onClose)

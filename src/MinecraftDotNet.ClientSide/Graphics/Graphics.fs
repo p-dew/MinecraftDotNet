@@ -32,115 +32,93 @@ module Absorb =
         _value <- x
 
 
-module Shader =
-
-    open System.Diagnostics
-
-    exception ShaderCompileException of infoLog: string
-
-    let private checkCompileStatus (shaderHandle: int) =
-        let params' = GL.GetShader(shaderHandle, ShaderParameter.CompileStatus)
-        Debug.Print("Compile status: ", params')
-        let str = GL.GetShaderInfoLog(shaderHandle)
-        if not (String.IsNullOrEmpty(str)) then
-            Debug.Print("Compile log:\n", str)
-        if params' <> 1 then
-            Debug.Print("Error compiling shader.")
-            raise (ShaderCompileException str)
-
-    let compileSource source shaderType =
-        let shaderHandle = GL.CreateShader(shaderType)
-        GL.ShaderSource(shaderHandle, source)
-        GL.CompileShader(shaderHandle)
-        checkCompileStatus shaderHandle
-        shaderHandle
-
-module ShaderProgram =
-
-    exception ProgramLinkException of programInfoLog: string
-
-    let private checkLinkStatus (programHandle: int) =
-        let params' = GL.GetProgram(programHandle, GetProgramParameterName.LinkStatus)
-        let programInfoLog = GL.GetProgramInfoLog(programHandle)
-        if not (String.IsNullOrEmpty(programInfoLog)) then
-            ()
-        if params' <> 1 then
-            raise (ProgramLinkException programInfoLog)
-
-    let create vertexShaderSource fragmentShaderSource =
-        let programHandle = GL.CreateProgram()
-
-        let vertexShaderHandle = Shader.compileSource vertexShaderSource ShaderType.VertexShader
-        GL.AttachShader(programHandle, vertexShaderHandle)
-
-        let fragmentShaderHandle = Shader.compileSource fragmentShaderSource ShaderType.FragmentShader
-        GL.AttachShader(programHandle, fragmentShaderHandle)
-
-        GL.LinkProgram(programHandle)
-        checkLinkStatus programHandle
-
-        programHandle
 
 type SingleBlockChunkRenderer(camera: Camera) =
 
-    static let cubeVertices =
+    static let cubeVerticesRaw =
         seq {
-            0, 0, 0;  0, 0, 1;  0, 1, 0;  0, 1, 1  // X = 0
-            1, 0, 0;  1, 0, 1;  1, 1, 0;  1, 1, 1  // X = 1
+            // X = 0, two triangles
+            0, 0, 0;  0, 0, 1;  0, 1, 0
+            0, 0, 1;  0, 1, 0;  0, 1, 1
+            // X = 1, two triangles
+            1, 0, 0;  1, 0, 1;  1, 1, 0
+            1, 0, 1;  1, 1, 0;  1, 1, 1
+            // Y = 0, two triangles
+            0, 0, 0;  0, 0, 1;  1, 0, 0
+            0, 0, 1;  1, 0, 0;  1, 0, 1
+            // Y = 1, two triangles
+            0, 1, 0;  0, 1, 1;  1, 1, 0
+            0, 1, 1;  1, 1, 0;  1, 1, 1
+            // Z = 0, two triangles
+            0, 0, 0;  0, 1, 0;  1, 0, 0
+            0, 1, 0;  1, 0, 0;  1, 1, 0
+            // Z = 1, two triangles
+            0, 0, 1;  0, 1, 1;  1, 0, 1
+            0, 1, 1;  1, 0, 1;  1, 1, 1
         }
+    static let cubeVertices =
+        cubeVerticesRaw
         |> Seq.map (fun (x, y, z) -> Vector3d(float x, float y, float z))
         |> Seq.toArray
 
     static let cubeUv =
+        let inline h k = 1. - (float k / 3.) // mirror on Y
+        let inline w k = float k / 4.
         seq {
-            0, 0;  0, 1;  1, 0;  1, 1;  0, 0;  0, 1;  1, 0;  1, 1
-            0, 0;  0, 1;  1, 0;  1, 1;  0, 0;  0, 1;  1, 0;  1, 1
-            0, 0;  0, 1;  1, 0;  1, 1;  0, 0;  0, 1;  1, 0;  1, 1
+            0, 1;  1, 1;  0, 2
+            1, 1;  0, 2;  1, 2
+
+            3, 1;  2, 1;  3, 2
+            2, 1;  3, 2;  2, 2
+
+            1, 0;  1, 1;  2, 0
+            1, 1;  2, 0;  2, 1
+
+            1, 3;  1, 2;  2, 3
+            1, 2;  2, 3;  2, 2
+
+            4, 1;  4, 2;  3, 1
+            4, 2;  3, 1;  3, 2
+
+            1, 1;  1, 2;  2, 1
+            1, 2;  2, 1;  2, 2
         }
-        |> Seq.map (fun (x, y) -> Vector2d(float x, float y))
+        |> Seq.map (fun (x, y) -> Vector2d(w x, h y))
         |> Seq.toArray
 
-    static let cubeEbo =
-        [|
-            // 4; 5; 6; 7
-            // 0; 1; 2; 3
-            // 2; 3; 6; 7
-            // 0; 1; 4; 5
-            // 1; 3; 5; 7
-            // 0; 2; 4; 6
-
-            0; 2; 3
-            3; 1; 0
-
-            1; 3; 7
-            7; 5; 1
-
-            5; 7; 6
-            6; 4; 5
-
-            4; 6; 2
-            2; 0; 4
-
-            0; 1; 5
-            5; 4; 0
-
-            7; 3; 2
-            2; 6; 7
-        |]
-
-    static let uvs =
-        [|
-            Vector2d(0., 0.)
-            Vector2d(0., 1.)
-            Vector2d(1., 0.)
-            Vector2d(1., 1.)
-        |]
+//    static let cubeEbo =
+//        [|
+//            // 4; 5; 6; 7
+//            // 0; 1; 2; 3
+//            // 2; 3; 6; 7
+//            // 0; 1; 4; 5
+//            // 1; 3; 5; 7
+//            // 0; 2; 4; 6
+//
+//            0; 2; 3
+//            3; 1; 0
+//
+//            1; 3; 7
+//            7; 5; 1
+//
+//            5; 7; 6
+//            6; 4; 5
+//
+//            4; 6; 2
+//            2; 0; 4
+//
+//            0; 1; 5
+//            5; 4; 0
+//
+//            7; 3; 2
+//            2; 6; 7
+//        |]
 
     // ----
 
     let mutable vao: VertexArray = Unchecked.defaultof<_>
     let mutable cubeVertexBuffer: Buffer<Vector3d> = Unchecked.defaultof<_>
-    let mutable cubeElementBuffer: Buffer<int> = Unchecked.defaultof<_>
+//    let mutable cubeElementBuffer: Buffer<int> = Unchecked.defaultof<_>
     let mutable cubeUvBuffer: Buffer<Vector2d> = Unchecked.defaultof<_>
 
 //    let mutable program: BlockProgram = Unchecked.defaultof<_>
@@ -156,14 +134,22 @@ type SingleBlockChunkRenderer(camera: Camera) =
             * context.ProjectionMatrix
         GL.UniformMatrix4(mvpMatrixUniformLocation, false, &mvpMatrix)
 
-        for i in 0 .. 2 do
-            let tex = blockInfo.Sides.Textures.[i]
-            // program.Side.BindTexture(TextureUnit.Texture0, tex)
-            let texUnit = TextureUnit.Texture0
-            GL.Uniform1(sideUniformLocation, int texUnit)
-            tex.Bind(texUnit)
+        let tex = blockInfo.TextureSheet
+        let texUnit = TextureUnit.Texture0
+        GL.Uniform1(sideUniformLocation, int texUnit)
+        tex.Bind(texUnit)
 
-            vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4)
+        vao.DrawArrays(PrimitiveType.Triangles, 0, 3 * 2 * 6)
+
+//        for i in 0 .. 2 do
+//            let tex = blockInfo.Sides.Textures.[i]
+//            // program.Side.BindTexture(TextureUnit.Texture0, tex)
+//            let texUnit = TextureUnit.Texture0
+//            GL.Uniform1(sideUniformLocation, int texUnit)
+//            tex.Bind(texUnit)
+//
+//            vao.DrawArrays(PrimitiveType.TriangleStrip, i * 4, 4)
+        ()
 
     interface IGlInitializable with
         member this.InitGl() =
@@ -178,8 +164,8 @@ type SingleBlockChunkRenderer(camera: Camera) =
             cubeVertexBuffer <- new Buffer<_>()
             cubeVertexBuffer.Init(BufferTarget.ElementArrayBuffer, cubeVertices)
 
-            cubeElementBuffer <- new Buffer<_>()
-            cubeElementBuffer.Init(BufferTarget.ArrayBuffer, cubeEbo)
+//            cubeElementBuffer <- new Buffer<_>()
+//            cubeElementBuffer.Init(BufferTarget.ArrayBuffer, cubeEbo)
 
             cubeUvBuffer <- new Buffer<_>()
             cubeUvBuffer.Init(BufferTarget.ArrayBuffer, cubeUv)
@@ -222,7 +208,7 @@ type SingleBlockChunkRenderer(camera: Camera) =
     interface IDisposable with
         member this.Dispose() =
             cubeVertexBuffer.Dispose()
-            cubeElementBuffer.Dispose()
+//            cubeElementBuffer.Dispose()
             cubeUvBuffer.Dispose()
 //            program.Dispose()
             GL.DeleteProgram(programHandle)

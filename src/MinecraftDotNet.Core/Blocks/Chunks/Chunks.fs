@@ -107,6 +107,22 @@ module ChunkGenerators =
                             newChunk.Blocks.[x, y, z] <- newBlock
                 newChunk
 
+    type SingleBlockChunkGenerator(airBlockProvider, blockProvider) =
+        interface IChunkGenerator with
+            member this.Generate(coords) =
+                let newChunk = Chunk()
+                for x in 0 .. Chunk.Size.Width - 1 do
+                    for y in 0 .. Chunk.Size.Height - 1 do
+                        for z in 0 .. Chunk.Size.Depth - 1 do
+                            let newBlock =
+                                if x = 0 && y = 0 && z = 0 then
+                                    blockProvider ()
+                                else
+                                    airBlockProvider ()
+                            newChunk.Blocks.[x, y, z] <- newBlock
+                newChunk
+
+
 module ChunkRepositories =
 
     open Microsoft.Extensions.Logging

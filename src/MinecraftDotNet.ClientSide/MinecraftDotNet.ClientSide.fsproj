@@ -8,7 +8,9 @@
     <ItemGroup>
         <Compile Include="McGameWindow.fs" />
         <Compile Include="Graphics\Shaders\BlockProgram.fs" />
+        <Compile Include="Graphics\ShaderUtils.fs" />
         <Compile Include="Graphics\Graphics.fs" />
+        <Compile Include="Graphics\DirectionHelper.fs" />
         <Compile Include="StandaloneClient.fs" />
         <Compile Include="Hosting.fs" />
         <Content Include="Data\Shaders\BlockShader.Vertex.glsl" />

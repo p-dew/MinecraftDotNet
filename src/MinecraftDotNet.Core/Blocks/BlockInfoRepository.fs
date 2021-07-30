@@ -28,6 +28,7 @@ type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
             tex.SetParameter(TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
             tex.SetParameter(TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
             tex.LoadBitmap(bitmap)
+
             tex
         )
         let itemInfo =
@@ -35,7 +36,7 @@ type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
               MaxStack = 64 }
         let blockInfo =
             { ItemInfo = itemInfo
-              Sides = BlockSides(Array.replicate 6 tex) }
+              TextureSheet = tex }
         blockInfo
 
     let mutable _air = Unchecked.defaultof<_>
@@ -54,7 +55,7 @@ type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
             let airTex = null
             _air <-
                 { ItemInfo = { Id = ItemId "air"; MaxStack = 0 }
-                  Sides = BlockSides(Array.replicate 6 airTex) }
+                  TextureSheet = airTex }
 
     interface IBlockInfoRepository with
         member this.GetByItemId(itemId) =

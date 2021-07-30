@@ -6,6 +6,7 @@ open Microsoft.Extensions.Logging
 open FSharp.Control.Tasks
 
 open MinecraftDotNet.ClientSide
+open MinecraftDotNet.ClientSide.Graphics
 open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkGenerators
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkRepositories
@@ -13,7 +14,7 @@ open MinecraftDotNet.Core.Blocks.Chunks.ChunkRepositories
 type McClientHostedService(loggerFactory: ILoggerFactory, lifetime: IHostApplicationLifetime) =
     let logger = loggerFactory.CreateLogger<McClientHostedService>()
     let blockInfoRepository = DefaultBlockInfoRepository(loggerFactory.CreateLogger())
-    let chunkGenerator = ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
+    let chunkGenerator = SingleBlockChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0)) // ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
     let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
     let blockRepository = ChunkBlockRepository(chunkRepository)
 
