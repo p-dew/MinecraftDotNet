@@ -51,15 +51,15 @@ type StandaloneClient(world: IWorld, glDeps: IGlInitializable seq, onClose) =
                         ] |> Seq.iter (fun g -> g.InitGl())
                 )
             camera.Enable(window)
-            window.AddRenderAction(fun projection view ->
+            window.AddRenderAction(fun viewProjection ->
                 let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
                 let chunk = world.ChunkRepository.GetChunk(chunkCoords)
-                let context = { ProjectionMatrix = projection; ViewMatrix = view }
+                let context = { ProjectionMatrix = viewProjection.Projection; ViewMatrix = viewProjection.View }
                 (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
             )
-            window.AddRenderAction(fun projection view ->
-                let rotation = view.ClearTranslation()
-                directionHelper.Render(projection, rotation)
+            window.AddRenderAction(fun viewProjection ->
+                let rotation = viewProjection.View.ClearTranslation()
+                directionHelper.Render(viewProjection.Projection, rotation)
             )
 
             window.Closed.Add(ignore >> onClose)

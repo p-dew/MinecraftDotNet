@@ -7,7 +7,12 @@ open OpenTK
 open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL4
 
-type RenderAction = delegate of projection: Matrix4 * view: Matrix4 -> unit
+[<Struct>]
+type ViewProjectionMatrices =
+    { View: Matrix4
+      Projection: Matrix4 }
+
+type RenderAction = delegate of viewProjection: ViewProjectionMatrices -> unit
 
 type McGameWindow(camera: Camera, onLoad) =
     inherit DerpWindow(1024, 720, GraphicsMode.Default, "Minecraft .NET Edition")
@@ -42,7 +47,7 @@ type McGameWindow(camera: Camera, onLoad) =
         camera.Update()
 
         for renderAction in renderActions do
-            renderAction.Invoke(projectionMatrix, viewMatrix)
+            renderAction.Invoke({ View = viewMatrix; Projection = projectionMatrix })
 
         this.SwapBuffers()
 
