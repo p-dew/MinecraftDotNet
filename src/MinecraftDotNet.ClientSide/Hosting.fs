@@ -10,18 +10,24 @@ open MinecraftDotNet.ClientSide.Graphics
 open MinecraftDotNet.Core.Blocks
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkGenerators
 open MinecraftDotNet.Core.Blocks.Chunks.ChunkRepositories
+open MinecraftDotNet.Core.Worlds
 
 type McClientHostedService(loggerFactory: ILoggerFactory, lifetime: IHostApplicationLifetime) =
     let logger = loggerFactory.CreateLogger<McClientHostedService>()
     let blockInfoRepository = DefaultBlockInfoRepository(loggerFactory.CreateLogger())
-    let chunkGenerator = SingleBlockChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0)) // ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
+    let chunkGenerator =
+//        SingleBlockChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
+//        ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
+        FlatChunkGenerator(8, (fun () -> blockInfoRepository.Test0), (fun () -> blockInfoRepository.Air))
     let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
     let blockRepository = ChunkBlockRepository(chunkRepository)
 
     let onClosed () =
         lifetime.StopApplication()
 
-    let client = new StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, [blockInfoRepository], onClosed)
+    let world = World(chunkRepository, blockRepository)
+
+    let client = new StandaloneClient(world, [blockInfoRepository], onClosed)
 
     interface IHostedService with
         member this.StartAsync(cancellationToken) = unitTask {

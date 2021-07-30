@@ -83,9 +83,9 @@ module ChunkGenerators =
                         for z in 0 .. Chunk.Size.Depth - 1 do
                             let newBlock =
                                 if y > height then
-                                    airBlock
+                                    airBlock ()
                                 else
-                                    terrainBlock
+                                    terrainBlock ()
                             newChunk.Blocks.[x, y, z] <- newBlock
                 newChunk
 

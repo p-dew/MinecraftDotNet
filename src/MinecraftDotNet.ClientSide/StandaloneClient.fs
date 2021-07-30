@@ -18,7 +18,7 @@ open MinecraftDotNet.Core.Worlds
 open MinecraftDotNet.ClientSide.Graphics
 
 
-type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glDeps: IGlInitializable seq, onClose) =
+type StandaloneClient(world: IWorld, glDeps: IGlInitializable seq, onClose) =
 
     let camera =
         Camera(
@@ -28,8 +28,6 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
                     LookAt = Vector3.One
                 )
         )
-
-    let currentWorld = World(chunkRepository, blockRepository)
 
     let chunkRenderer = new SingleBlockChunkRenderer(camera)
 
@@ -55,7 +53,7 @@ type StandaloneClient(chunkRepository, blockRepository, blockInfoRepository, glD
             camera.Enable(window)
             window.AddRenderAction(fun projection view ->
                 let chunkCoords: ChunkCoords = { X = 0; Z = 0 }
-                let chunk = (chunkRepository :> IChunkRepository).GetChunk(chunkCoords)
+                let chunk = world.ChunkRepository.GetChunk(chunkCoords)
                 let context = { ProjectionMatrix = projection; ViewMatrix = view }
                 (chunkRenderer :> IChunkRenderer).Render(context, chunk, chunkCoords)
             )
