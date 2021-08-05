@@ -30,7 +30,7 @@ type DirectionHelper() =
         in vec3 Vertex;
         out vec4 FragColor;
         void main() {
-            FragColor = vec4(Vertex, 1);
+            FragColor = vec4(sign(Vertex), 1);
         }
     """
 
@@ -64,14 +64,12 @@ type DirectionHelper() =
 
         let mutable mvpMatrix =
             rotation
-            * Matrix4.CreateTranslation(0f, -0f, -20f)
+            * Matrix4.CreateTranslation(0f, 0f, -40f)
             * projectionMatrix
         GL.UniformMatrix4(mvpMatrixUniformLocation, false, &mvpMatrix)
 
-        // TODO: Correct depth test
-        GL.Disable(EnableCap.DepthTest)
+        GL.Clear(ClearBufferMask.DepthBufferBit)
         vao.DrawArrays(PrimitiveType.Lines, 0, 2 * 3)
-        GL.Enable(EnableCap.DepthTest)
 
         GL.UseProgram(0)
         GL.BindVertexArray(0)
