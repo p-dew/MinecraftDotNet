@@ -1,5 +1,6 @@
 namespace MinecraftDotNet.ClientSide.Hosting
 
+open System
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 
@@ -18,7 +19,7 @@ type McClientHostedService(loggerFactory: ILoggerFactory, lifetime: IHostApplica
     let chunkGenerator =
 //        SingleBlockChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
 //        ChessChunkGenerator((fun () -> blockInfoRepository.Air), (fun () -> blockInfoRepository.Test0))
-        FlatChunkGenerator(8, (fun () -> blockInfoRepository.Test0), (fun () -> blockInfoRepository.Air))
+        FlatChunkGenerator(8, (fun () -> blockInfoRepository.Dirt), (fun () -> blockInfoRepository.Air))
     let chunkRepository = MemoryChunkRepository(chunkGenerator, loggerFactory.CreateLogger())
     let blockRepository = ChunkBlockRepository(chunkRepository)
 
@@ -37,6 +38,7 @@ type McClientHostedService(loggerFactory: ILoggerFactory, lifetime: IHostApplica
         member this.StopAsync(cancellationToken) = unitTask {
             logger.LogInformation($"Stop {nameof McClientHostedService}")
             client.Stop()
+            (client :> IDisposable).Dispose()
         }
 
 

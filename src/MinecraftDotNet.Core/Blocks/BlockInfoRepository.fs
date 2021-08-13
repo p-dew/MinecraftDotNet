@@ -2,6 +2,7 @@ namespace MinecraftDotNet.Core.Blocks
 
 open System.Drawing
 open System.Drawing
+open Ehingeeinae.ResourceManagement
 open Microsoft.Extensions.Logging
 open MinecraftDotNet.Core
 open MinecraftDotNet.Core.Items
@@ -19,24 +20,25 @@ module BlockInfoRepositoryExtensions =
         member this.Test0 = this.GetByItemId(ItemId "test0")
 
 
-type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>) =
+type DefaultBlockInfoRepository(logger: ILogger<DefaultBlockInfoRepository>, glResourceManager: IGlResourceManager) =
 
     let loadBlockInfo (texPath: string) id =
         logger.LogDebug($"Load new BlockInfo(ItemId = {id}; TexPath = {texPath})")
-        let tex = using (new Bitmap(texPath)) (fun bitmap ->
-            let tex = new Texture2D(SizedInternalFormat.Rgba8, bitmap.Width, bitmap.Height)
-            tex.SetParameter(TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
-            tex.SetParameter(TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
-            tex.LoadBitmap(bitmap)
-
-            tex
+        let textureHandle = using (new Bitmap(texPath)) (fun bitmap ->
+            let textureHandle =
+                glResourceManager.LoadTexture(gl, bitmap, fun tex ->
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, int TextureMinFilter.Nearest)
+                    ()
+                )
+            textureHandle
         )
         let itemInfo =
             { Id = ItemId id
               MaxStack = 64 }
         let blockInfo =
             { ItemInfo = itemInfo
-              TextureSheet = tex }
+              TextureSheet = textureHandle }
         blockInfo
 
     let mutable _air = Unchecked.defaultof<_>
