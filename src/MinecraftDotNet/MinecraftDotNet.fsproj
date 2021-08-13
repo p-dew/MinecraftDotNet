@@ -10,19 +10,18 @@
     </ItemGroup>
     
     <ItemGroup>
-        <None Remove="assets\textures\dirt.png" />
-        <Content Include="assets\textures\dirt.png">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="assets\textures\test0.png" />
-        <Content Include="assets\textures\test0.png">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
         <Content Include="appsettings.json" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="..\..\assets\**\*.*">
+            <Link>assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.fsproj" />
+        <ProjectReference Include="..\MinecraftDotNet.ClientSide\MinecraftDotNet.ClientSide.fsproj" />
     </ItemGroup>
 
 </Project>
