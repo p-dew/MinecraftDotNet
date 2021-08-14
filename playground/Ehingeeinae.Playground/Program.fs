@@ -15,12 +15,14 @@ type Position =
 type Velocity =
     { Velocity: Vector2 }
 
-let world: EcsWorld = { Archetypes = Dictionary() }
+let world = EcsWorld.createEmpty ()
 let worldManager = EcsWorldManager(world)
 
 [<EntryPoint>]
 let main args =
     printfn $"World init: %A{world}"
+
+    worldManager.AddEntity1(EcsEntityId 1UL) |> ignore
 
     let eid1 = worldManager.AddEntity2({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) })
     let eid2 = worldManager.AddEntity2({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(-1f, -1f) })
