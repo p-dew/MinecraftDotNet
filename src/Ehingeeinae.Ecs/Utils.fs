@@ -1,5 +1,5 @@
 [<AutoOpen>]
-module internal Ehingeeinae.Ecs.Utils
+module Ehingeeinae.Ecs.Utils
 
 module ResizeArray =
 

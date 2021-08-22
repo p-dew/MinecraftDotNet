@@ -3,32 +3,50 @@ namespace Ehingeeinae.Ecs.Worlds
 open System
 open System.Collections.Generic
 
+open Microsoft.Extensions.Logging
+
+open TypeShape.Core
+
 open Ehingeeinae.Ecs
 
 
 type EcsArchetype =
-    { ComponentTypes: ISet<Type> }
+    { ComponentTypes: HashSet<Type> }
+    override this.ToString() =
+        let inner = this.ComponentTypes |> Seq.map (fun x -> x.FullName) |> String.concat ", "
+        $"Archetype[{inner}]"
 
 module EcsArchetype =
 
-    let inline createSeq (types: Type seq) = { ComponentTypes = HashSet(types) }
-    let inline create1<'c0> () = createSeq [ typeof<'c0> ]
-    let inline create2<'c0, 'c1> () = createSeq [ typeof<'c0>; typeof<'c1> ]
+    let inline createOfTypes (types: Type seq) = { ComponentTypes = HashSet(types) }
+//    let inline create1<'c0> () = createOfTypes [ typeof<'c0> ]
+//    let inline create2<'c0, 'c1> () = createOfTypes [ typeof<'c0>; typeof<'c1> ]
+
+type EcsArchetypeEqualityComparer() =
+    static let hashsetComparer = HashSet.CreateSetComparer()
+    interface IEqualityComparer<EcsArchetype> with
+        member this.Equals(x, y) = hashsetComparer.Equals(x.ComponentTypes, y.ComponentTypes)
+        member this.GetHashCode(obj) = hashsetComparer.GetHashCode(obj.ComponentTypes)
 
 
 /// ResizeArray<'comp>
 type ComponentColumn = obj
 
 module ComponentColumn =
-    // TODO: Rename
+
     let inline unbox<'comp> (col: ComponentColumn) : ResizeArray<'comp> =
         assert (match col with :? ResizeArray<'comp> -> true | _ -> false)
         downcast col
 
-    let inline create1<'c0> () : ComponentColumn[] =
-        [| ResizeArray<'c0>() |]
-    let inline create2<'c0, 'c1> () : ComponentColumn[] =
-        [| ResizeArray<'c0>(); ResizeArray<'c1>() |]
+    let createOfTypes (compTypes: Type seq) : ComponentColumn[] =
+        [| for compType in compTypes ->
+            let t = typedefof<ResizeArray<_>>.MakeGenericType(compType)
+            Activator.CreateInstance(t) |]
+
+//    let inline create1<'c0> () : ComponentColumn[] =
+//        [| ResizeArray<'c0>() |]
+//    let inline create2<'c0, 'c1> () : ComponentColumn[] =
+//        [| ResizeArray<'c0>(); ResizeArray<'c1>() |]
 
 
 (*
@@ -65,17 +83,18 @@ type ArchetypeStorage =
         )
     member this.GetColumn<'c>(): ResizeArray<'c> =
         this.ComponentColumns
-        |> Array.pick (function
+        |> Array.tryPick (function
             | :? ResizeArray<'c> as col -> Some col
             | _ -> None
         )
-    member this.Add1(eid, comp0: 'c0) =
-        this.Ids.Add(eid)
-        this.GetColumn<'c0>().Add(comp0)
-    member this.Add2(eid, comp0: 'c0, comp1: 'c1) =
-        this.Ids.Add(eid)
-        this.GetColumn<'c0>().Add(comp0)
-        this.GetColumn<'c1>().Add(comp1)
+        |> function Some col -> col | None -> failwithf $"Cannot find ComponentColumn<%O{typeof<'c>}>"
+//    member this.Add1(eid, comp0: 'c0) =
+//        this.Ids.Add(eid)
+//        this.GetColumn<'c0>().Add(comp0)
+//    member this.Add2(eid, comp0: 'c0, comp1: 'c1) =
+//        this.Ids.Add(eid)
+//        this.GetColumn<'c0>().Add(comp0)
+//        this.GetColumn<'c1>().Add(comp1)
 
 
 type EcsWorld =
@@ -83,17 +102,21 @@ type EcsWorld =
 
 module EcsWorld =
     let createEmpty () : EcsWorld =
-        { Archetypes = Dictionary() }
+        let comparer = EcsArchetypeEqualityComparer()
+        { Archetypes = Dictionary(comparer) }
 
+type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManager>) =
 
-type ArchetypeQuery =
-    | HasComponentType of Type
-    | HasNoComponentType of Type
-    | And of ArchetypeQuery * ArchetypeQuery
-    | Or of ArchetypeQuery * ArchetypeQuery
-
-type EcsWorldManager(world: EcsWorld) =
-    let archetypes = world.Archetypes
+    let getStorage archetype =
+        let archetypes = world.Archetypes
+        match archetypes.TryGetValue(archetype) with
+        | false, _ ->
+            logger.LogDebug($"Creating new storage for archetype {archetype}")
+            let columns = ComponentColumn.createOfTypes archetype.ComponentTypes
+            let storage = { Ids = ResizeArray(); ComponentColumns = columns }
+            archetypes.[archetype] <- storage
+            storage
+        | true, storage -> storage
 
     let mutable lastEid = 0UL
     let createNextEid () =
@@ -101,14 +124,63 @@ type EcsWorldManager(world: EcsWorld) =
         lastEid <- newEid
         EcsEntityId newEid
 
-    let getStorage (createColumns: unit -> ComponentColumn[]) archetype =
-        match archetypes.TryGetValue(archetype) with
-        | false, _ ->
-            let columns: ComponentColumn[] = createColumns ()
-            let storage = { Ids = ResizeArray(); ComponentColumns = columns }
-            archetypes.[archetype] <- storage
-            storage
-        | true, storage -> storage
+    let cachedAddEntity = Dictionary<Type, obj>()
+
+    let mkAddEntity () : 'TTuple -> EcsEntityId =
+        let shape = shapeof<'TTuple>
+        match shape with
+        | Shape.Tuple (:? ShapeTuple<'TTuple> as shape) ->
+            let compTypes = shape.Elements |> Seq.map (fun e -> e.Member.Type)
+            let archetype = EcsArchetype.createOfTypes compTypes
+            let storage = getStorage archetype
+            let mkAddComp (shape: IShapeMember<'TTuple>) =
+                shape.Accept({ new IMemberVisitor<'TTuple, 'TTuple -> unit> with
+                    member this.Visit(shape) =
+                        fun compTuple ->
+                            let comp = shape.Get(compTuple)
+                            let col = storage.GetColumn<'c>()
+                            col.Add(comp)
+                })
+            let addComps = shape.Elements |> Array.map mkAddComp
+            fun (compTuple: 'TTuple) ->
+                let eid = createNextEid ()
+                storage.Ids.Add(eid)
+                addComps |> Array.iter (fun addComp -> addComp compTuple)
+                eid
+        // Single value
+        | Shape.Struct shape ->
+            let compTypes = [ typeof<'TTuple> ]
+            let archetype = EcsArchetype.createOfTypes compTypes
+            let storage = getStorage archetype
+            let addComp =
+                shape.Accept({ new IStructVisitor<'TTuple -> unit> with
+                    member this.Visit() =
+                        fun comp ->
+                            let col = storage.GetColumn<'TTuple>()
+                            col.Add(comp)
+                })
+            fun comp ->
+                let eid = createNextEid ()
+                storage.Ids.Add(eid)
+                addComp comp
+                eid
+        | _ ->
+            raise <| NotSupportedException($"Type '%O{typeof<'TTuple>}' is not supported for component set representation")
+
+    member this.AddEntity<'TTuple>(t: 'TTuple): EcsEntityId =
+        let addEntity =
+            match cachedAddEntity.TryGetValue(typeof<'TTuple>) with
+            | true, (:? ('TTuple -> EcsEntityId) as f) -> f
+            | _ ->
+                logger.LogDebug($"Make new AddEntity<'TTuple> for type '%O{typeof<'TTuple>}'")
+                let addEntity = mkAddEntity()
+                cachedAddEntity.[typeof<'TTuple>] <- addEntity
+                addEntity
+        addEntity t
+
+
+type EcsWorldManager(world: EcsWorld, logger: ILogger<EcsWorldManager>) =
+    let archetypes = world.Archetypes
 
     let getColumns (types: Type seq) : ComponentColumn[] seq =
         seq {
@@ -127,19 +199,20 @@ type EcsWorldManager(world: EcsWorld) =
 //                ()
 //        selectQuery aq archetypes.Keys
 
-    member this.AddEntity1<'c0>(comp0: 'c0) =
-        let archetype = EcsArchetype.create1<'c0> ()
-        let storage = getStorage ComponentColumn.create1<'c0> archetype
-        let eid = createNextEid ()
-        storage.Add1(eid, comp0)
-        eid
 
-    member this.AddEntity2<'c0, 'c1>(comp0: 'c0, comp1: 'c1) =
-        let archetype = EcsArchetype.create2<'c0, 'c1> ()
-        let storage = getStorage ComponentColumn.create2<'c0, 'c1> archetype
-        let eid = createNextEid ()
-        storage.Add2(eid, comp0, comp1)
-        eid
+//    member this.AddEntity1<'c0>(comp0: 'c0) =
+//        let archetype = EcsArchetype.create1<'c0> ()
+//        let storage = getStorage ComponentColumn.create1<'c0> archetype
+//        let eid = createNextEid ()
+//        storage.Add1(eid, comp0)
+//        eid
+//
+//    member this.AddEntity2<'c0, 'c1>(comp0: 'c0, comp1: 'c1) =
+//        let archetype = EcsArchetype.create2<'c0, 'c1> ()
+//        let storage = getStorage ComponentColumn.create2<'c0, 'c1> archetype
+//        let eid = createNextEid ()
+//        storage.Add2(eid, comp0, comp1)
+//        eid
 
     // ----
 
@@ -157,3 +230,5 @@ type EcsWorldManager(world: EcsWorld) =
             let col1 = cols.[1] |> ComponentColumn.unbox<'c1>
             ResizeArray.getItems col0, ResizeArray.getItems col1
         )
+
+

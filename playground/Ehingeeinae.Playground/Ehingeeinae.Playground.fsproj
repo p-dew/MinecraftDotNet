@@ -6,11 +6,22 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="HostedServiceExtensions.fs" />
         <Compile Include="Program.fs" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="appsettings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     </ItemGroup>
 
 </Project>
