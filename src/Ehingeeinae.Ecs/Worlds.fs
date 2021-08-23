@@ -191,12 +191,9 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
             let addComp =
-//                shapeStruct.Accept({ new IStructVisitor<_> with
-//                    member _.Visit() =
-                        fun comp ->
-                            let col = storage.GetColumn<'TTuple>()
-                            col.Add(comp)
-//                })
+                fun comp ->
+                    let col = storage.GetColumn<'TTuple>()
+                    col.Add(comp)
             fun comp ->
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
