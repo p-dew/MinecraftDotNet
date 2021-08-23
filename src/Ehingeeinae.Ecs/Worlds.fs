@@ -3,6 +3,7 @@ namespace Ehingeeinae.Ecs.Worlds
 open System
 open System.Collections.Generic
 
+open System.Text
 open Microsoft.Extensions.Logging
 
 open TypeShape.Core
@@ -48,6 +49,9 @@ module ComponentColumn =
 //    let inline create2<'c0, 'c1> () : ComponentColumn[] =
 //        [| ResizeArray<'c0>(); ResizeArray<'c1>() |]
 
+type IEcsEntityView =
+    abstract Archetype: EcsArchetype
+    abstract GetComponent<'c> : unit -> 'c
 
 (*
 
@@ -67,9 +71,14 @@ Id |-----------------------
  2 |   cA2 |   cB2 |   cC2 |
 
 *)
-type ArchetypeStorage =
-    { Ids: ResizeArray<EcsEntityId>
-      ComponentColumns: ComponentColumn[] }
+type ArchetypeStorage(archetype: EcsArchetype) =
+    let ids = ResizeArray<EcsEntityId>()
+    let componentColumns = ComponentColumn.createOfTypes archetype.ComponentTypes
+
+    member _.Ids = ids
+    member _.ComponentColumns = componentColumns
+
+    member _.Count = ids.Count
 
     /// <returns>ResizeArray&lt;compType&gt;</returns>
     member this.GetColumn(compType: Type): ComponentColumn =
@@ -81,6 +90,7 @@ type ArchetypeStorage =
             else
                 None
         )
+
     member this.GetColumn<'c>(): ResizeArray<'c> =
         this.ComponentColumns
         |> Array.tryPick (function
@@ -88,6 +98,35 @@ type ArchetypeStorage =
             | _ -> None
         )
         |> function Some col -> col | None -> failwithf $"Cannot find ComponentColumn<%O{typeof<'c>}>"
+
+    member this.Add(comps: 'T) =
+
+        ()
+
+    member this.GetEntity(eid: EcsEntityId) =
+        let idx = ids |> Seq.findIndex ((=) eid)
+        let view = { new IEcsEntityView with
+            member _.Archetype = archetype
+            member _.GetComponent<'c>(): 'c =
+                let c = this.GetColumn<'c>().[idx]
+                c
+        }
+        view
+
+    override this.ToString() =
+        let sb = StringBuilder()
+        sb.AppendLine("[") |> ignore
+        let cols = componentColumns |> Array.map (fun col -> col :?> System.Collections.IEnumerable |> Seq.cast<obj> |> Seq.toArray)
+        for i in 0 .. ids.Count - 1 do
+            sb.Append("    ") |> ignore
+            let (EcsEntityId eid) = ids.[i]
+            sb.Append($"<{eid}>{{ ") |> ignore
+            for col in cols do
+                let c = col.[i]
+                sb.Append(c).Append(", ") |> ignore
+            sb.AppendLine("}") |> ignore
+        sb.Append("]") |> ignore
+        sb.ToString()
 //    member this.Add1(eid, comp0: 'c0) =
 //        this.Ids.Add(eid)
 //        this.GetColumn<'c0>().Add(comp0)
@@ -112,8 +151,7 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
         match archetypes.TryGetValue(archetype) with
         | false, _ ->
             logger.LogDebug($"Creating new storage for archetype {archetype}")
-            let columns = ComponentColumn.createOfTypes archetype.ComponentTypes
-            let storage = { Ids = ResizeArray(); ComponentColumns = columns }
+            let storage = ArchetypeStorage(archetype)
             archetypes.[archetype] <- storage
             storage
         | true, storage -> storage

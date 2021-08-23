@@ -55,14 +55,15 @@ let work (services: IServiceProvider) =
 
     logger.LogInformation($"World init: %A{world}")
 
-    worldEntityManager.AddEntity({ Position = Vector2(2f, 2f) }, { Velocity = Vector2( 1f,  1f) }) |> ignore
-    worldEntityManager.AddEntity({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
+    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2( 1f,  1f) }) |> ignore
+    worldEntityManager.AddEntity({ Position = Vector2(-2f, -2f) }, { Velocity = Vector2(-1f, -1f) }) |> ignore
+    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
 
     logger.LogInformation($"World seeded: %A{world}")
 
-    let q = EcsQuery.query2<Position, Velocity> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
+    let q = ecsQuery { EcsQueryC.comp<Position>; EcsQueryC.comp<Velocity> } |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
     let comps = worldQueryExecutor.ExecuteQuery(q)
-    for position, velocity in comps do
+    for (position: EcsComponent<Position>), (velocity: EcsComponent<Velocity>) in comps do
         let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
         EcsComponent.updateValue position &newPosition
 
@@ -77,8 +78,8 @@ let configureServices (services: IServiceCollection) : unit =
 
 // ----
 
-type Worker(services, lifetime) =
-    inherit SingleWorkHostedService(async { do work services }, lifetime)
+type Worker(services, lifetime, loggerFactory: ILoggerFactory) =
+    inherit SingleWorkHostedService(async { do work services }, lifetime, loggerFactory.CreateLogger<_>())
 
 let createHostBuilder args =
     Host.CreateDefaultBuilder(args)

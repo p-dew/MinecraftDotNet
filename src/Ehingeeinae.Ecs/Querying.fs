@@ -1,5 +1,6 @@
 namespace Ehingeeinae.Ecs.Querying
 
+open System
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
 
@@ -11,17 +12,21 @@ type EcsComponent<'comp> =
 
 module EcsComponent =
 
-    open System
     open System.Runtime.CompilerServices
 
+    let cast (c: 'c byref) : EcsComponent<'c> =
+        let p = Unsafe.AsPointer(&c)
+        { Pointer = p }
+
     let getValue (comp: EcsComponent<'c>) : 'c =
-        let p = &Unsafe.AsRef(comp.Pointer)
-        p
+//        assert (comp.Pointer <> IntPtr.Zero.ToPointer())
+        Unsafe.AsRef<'c>(comp.Pointer)
 
     let updateValue (comp: EcsComponent<'c>) (value: 'c inref) : unit =
         let vp = comp.Pointer
-        assert (vp <> IntPtr.Zero.ToPointer())
+//        assert (vp <> IntPtr.Zero.ToPointer())
         let p = &Unsafe.AsRef<'c>(vp)
+        let value = value
         p <- value
 
 [<AutoOpen>]
@@ -44,6 +49,7 @@ module EcsQueryFilter =
     let comp<'c> : EcsQueryFilter = EcsQueryFilter (fun archetype -> archetype.ComponentTypes.Contains(typeof<'c>))
 
 
+// Based on Rust Amethyst Legion
 type IEcsQuery<'CompTuple> =
     abstract Fetch: ArchetypeStorage -> 'CompTuple seq
     abstract Filter: EcsArchetype -> bool
@@ -56,11 +62,6 @@ module EcsQuery =
 
     [<AutoOpen>]
     module private Utils =
-
-        open System
-
-        type Unit' = struct end
-        let unit' = Unit'()
 
         let assertEqualArrayLengths (arrays: _[] seq) =
             assert (
@@ -123,30 +124,78 @@ module EcsQuery =
             }
         }
 
+    // ----
+
+    type IEcsComponentVisitor<'R> =
+        abstract Visit<'c> : unit -> 'R
+
+    type IShapeEcsComponent =
+        abstract Component: TypeShape
+        abstract Accept<'R> : IEcsComponentVisitor<'R> -> 'R
+
+    type ShapeEcsComponent<'c>() =
+        interface IShapeEcsComponent with
+            member _.Component = upcast shapeof<'c>
+            member this.Accept(v) = v.Visit<'c>()
+
+    [<RequireQualifiedAccess>]
+    module Shape =
+        let (|EcsComponent|_|) (shape: TypeShape) =
+            match shape.ShapeInfo with
+            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsComponent<_>> ->
+                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
+                :?> IShapeEcsComponent
+                |> Some
+            | _ -> None
+
+    // ----
+
+    type SetTuple<'TTuple> = delegate of 'TTuple byref * ComponentColumn * int -> 'TTuple
+
     let queryN<'q> : IEcsQuery<'q> =
         let shape = shapeof<'q>
         match shape with
         | Shape.Tuple (:? ShapeTuple<'q> as shapeTuple) ->
-            let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
+            let compTypes = shapeTuple.Elements |> Array.map (fun e -> e.Member.Type.GetGenericArguments().[0])
+            let fs_setTupleItem: SetTuple<'q>[] =
+                shapeTuple.Elements
+                |> Array.map (fun shapeItem ->
+                    match shapeItem.Member with
+                    | Shape.EcsComponent shapeEcsComp ->
+                        shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
+                            member _.Visit<'c>() =
+                                match shapeItem with
+                                | :? ShapeMember<'q, EcsComponent<'c>> as shapeItem ->
+                                    SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
+                                        let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
+                                        let c = &arr.Array.[i]
+                                        let ec = EcsComponent.cast &c
+                                        shapeItem.Set q ec
+                                    )
+                                | _ ->
+                                    failwith "not EcsComp<'c>"
+                        })
+                    | _ ->
+                        failwith "not ShapeEcsComp"
+                )
             { new IEcsQuery<'q> with
-                member _.Filter(archetype) = archetype.ComponentTypes.IsSupersetOf(compTypes)
+                member _.Filter(archetype) =
+                    archetype.ComponentTypes.IsSupersetOf(compTypes)
                 member _.Fetch(storage) =
-                    shapeTuple.Elements
-                    |> Seq.iter (fun e ->
-                        e.Accept({ new IMemberVisitor<'q, Unit'> with
-                            member _.Visit(shapeItem: ShapeMember<_, 'c>) =
-                                let col = storage.GetColumn<'c>()
-                                let arr = ResizeArray.getItems col
-                                shapeTuple.CreateUninitialized()
-                                unit'
-                        }) |> ignore
-                    )
-                    ()
+                    let cols = compTypes |> Array.map storage.GetColumn
+                    seq {
+                        for i in 0 .. storage.Count - 1 do
+                            let mutable tupleInstance = shapeTuple.CreateUninitialized()
+                            for j in 0 .. cols.Length - 1 do
+                                let setTupleItem = fs_setTupleItem.[j]
+                                let col = cols.[j]
+                                tupleInstance <- setTupleItem.Invoke(&tupleInstance, col, i)
+                            yield tupleInstance
+                    }
             }
         | _ ->
             failwith ""
 
-    // ecsQuery { comp<A>; comp<B> }
 
 type EcsWorldQueryExecutor(world: EcsWorld) =
     let archetypes = world.Archetypes
@@ -160,7 +209,6 @@ type EcsWorldQueryExecutor(world: EcsWorld) =
 
 
 type EcsQueryComponentType<'c> = struct end
-//type EcsQueryComponentDummy = struct end
 
 type E<'a> = struct end
 type D = struct end
@@ -172,28 +220,30 @@ module EcsQueryC =
 type EcsQueryBuilder() =
     member _.Delay(f) = f ()
 
-    member _.Yield(c: EcsQueryComponentType<'c>): EcsQueryComponentType<'c> * D = EcsQueryComponentType(), D()
-    member _.Combine(_: EcsQueryComponentType<'c1> * D, c2: EcsQueryComponentType<'c2> * 's)
-        : EcsQueryComponentType<'c1 * 'c2> * E<'s>
-        = EcsQueryComponentType(), E()
+    member _.Yield(_: EcsQueryComponentType<'c>)
+        : struct(EcsQueryComponentType<'c> * D) = Unchecked.defaultof<_>
+    member _.Combine(_: struct(EcsQueryComponentType<'c1> * D), _: struct(EcsQueryComponentType<'c2> * 's))
+        : struct(EcsQueryComponentType<struct('c1 * 'c2)> * E<'s>) = Unchecked.defaultof<_>
 
-//    member _.Run<'c1 when 'c1 : struct>(q: 'c1) = q
-//    member _.Run<'c1, 'c2 when 'c2 : struct>(q: 'c1 * 'c2) = q
-//    member _.Run<'c1, 'c2, 'c3 when 'c3 : struct>((c1, (c2, c3))): 'c1 * 'c2 * 'c3 = (c1, c2, c3)
+//    member _.Zero(): struct(EcsQueryComponentType<unit> * D) = Unchecked.defaultof<_>
+//    member _.Zero(): 'a = Unchecked.defaultof<_>
+//
+//    member _.Yield(()) = ()
+//
+//    [<CustomOperation("comp")>]
+//    [<RequiresExplicitTypeArguments>]
+//    member _.Comp<'c>(_): struct (EcsQueryComponentType<'c> * D) =
+//        Unchecked.defaultof<_>
+
+//    member _.Run<'c1>(_: struct(EcsQueryComponentType<'c1> * D)) = EcsQuery.query1<'c1>
+    member _.Run<'c1, 'c2>(_: struct(EcsQueryComponentType<struct('c1 * 'c2)> * E<D>)) =
+//        EcsQuery.query2<'c1, 'c2>
+        EcsQuery.queryN<struct(EcsComponent<'c1> * EcsComponent<'c2>)>
+//    member _.Run<'c1, 'c2, 'c3>(_: struct(EcsQueryComponentType<struct('c1 * struct('c2 * 'c3))> * E<E<D>>)) = EcsQuery.query3<'c1, 'c2, 'c3>
 //    member _.Run<'c1, 'c2, 'c3, 'c4 when 'c4 : struct>((c1, (c2, (c3, c4)))): 'c1 * 'c2 * 'c3 * 'c4 = (c1, c2, c3, c4)
+    member _.Run(_: struct(_ * E<E<D>>)) =
+        raise <| NotSupportedException("Too many component types")
 
 [<AutoOpen>]
 module EcsQueryBuilderImpl =
     let ecsQuery = EcsQueryBuilder()
-
-
-module pg =
-
-    let foo () =
-        let q = ecsQuery {
-            EcsQueryC.comp<int8>
-            EcsQueryC.comp<int16>
-            EcsQueryC.comp<int32>
-        }
-
-        ()

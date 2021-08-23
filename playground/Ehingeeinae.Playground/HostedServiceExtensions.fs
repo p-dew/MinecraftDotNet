@@ -6,6 +6,7 @@ open System.Threading.Tasks
 
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
 
 
 type HostedServiceFactory<'THostedService>
@@ -16,11 +17,16 @@ type WorkerHostedService(work: Async<unit>) =
     inherit BackgroundService()
     override this.ExecuteAsync(ct) = Async.StartAsTask(work, cancellationToken=ct) :> Task
 
-type SingleWorkHostedService(work: Async<unit>, lifetime: IHostApplicationLifetime) =
+type SingleWorkHostedService(work: Async<unit>, lifetime: IHostApplicationLifetime, logger: ILogger<SingleWorkHostedService>) =
     inherit BackgroundService()
     let work' = async {
-        do! work
-        do lifetime.StopApplication()
+        try
+            try
+                do! work
+            with e ->
+                logger.LogError(e, "")
+        finally
+            do lifetime.StopApplication()
     }
     override this.ExecuteAsync(ct) =
         Async.StartAsTask(work', cancellationToken=ct) :> Task
