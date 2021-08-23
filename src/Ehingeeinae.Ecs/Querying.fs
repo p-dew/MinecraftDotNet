@@ -175,6 +175,7 @@ module EcsQuery =
                                         let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
                                         let c = &arr.Array.[i]
                                         let ec = EcsComponent.cast &c
+                                        // TODO: This setter does boxing. Use something else
                                         shapeItem.Set q ec
                                     )
                                 | _ ->
