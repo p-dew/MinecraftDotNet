@@ -167,32 +167,32 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
     let mkAddEntity () : 'TTuple -> EcsEntityId =
         let shape = shapeof<'TTuple>
         match shape with
-        | Shape.Tuple (:? ShapeTuple<'TTuple> as shape) ->
-            let compTypes = shape.Elements |> Seq.map (fun e -> e.Member.Type)
+        | Shape.Tuple (:? ShapeTuple<'TTuple> as shapeTuple) ->
+            let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
-            let mkAddComp (shape: IShapeMember<'TTuple>) =
-                shape.Accept({ new IMemberVisitor<'TTuple, 'TTuple -> unit> with
-                    member this.Visit(shape) =
+            let mkAddComp (shapeElement: IShapeMember<'TTuple>) =
+                shapeElement.Accept({ new IMemberVisitor<'TTuple, _> with
+                    member _.Visit<'c>(shapeElement) =
                         fun compTuple ->
-                            let comp = shape.Get(compTuple)
+                            let comp = shapeElement.Get(compTuple)
                             let col = storage.GetColumn<'c>()
                             col.Add(comp)
                 })
-            let addComps = shape.Elements |> Array.map mkAddComp
+            let addComps = shapeTuple.Elements |> Array.map mkAddComp
             fun (compTuple: 'TTuple) ->
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
                 addComps |> Array.iter (fun addComp -> addComp compTuple)
                 eid
         // Single value
-        | Shape.Struct shape ->
+        | Shape.Struct shapeStruct ->
             let compTypes = [ typeof<'TTuple> ]
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
             let addComp =
-                shape.Accept({ new IStructVisitor<'TTuple -> unit> with
-                    member this.Visit() =
+                shapeStruct.Accept({ new IStructVisitor<_> with
+                    member _.Visit() =
                         fun comp ->
                             let col = storage.GetColumn<'TTuple>()
                             col.Add(comp)
