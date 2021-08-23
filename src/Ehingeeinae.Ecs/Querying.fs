@@ -10,6 +10,10 @@ type EcsComponent<'comp> =
     internal
         { Pointer: voidptr }
 
+[<RequireQualifiedAccess>]
+module VoidPtr =
+    let inline isNotNull (p: voidptr) = IntPtr(p) <> IntPtr.Zero
+
 module EcsComponent =
 
     open System.Runtime.CompilerServices
@@ -18,13 +22,14 @@ module EcsComponent =
         let p = Unsafe.AsPointer(&c)
         { Pointer = p }
 
-    let getValue (comp: EcsComponent<'c>) : 'c =
-//        assert (comp.Pointer <> IntPtr.Zero.ToPointer())
-        Unsafe.AsRef<'c>(comp.Pointer)
+    let getValue (comp: EcsComponent<'c>) : 'c inref =
+        let vp = comp.Pointer
+        assert (VoidPtr.isNotNull vp)
+        &Unsafe.AsRef<'c>(vp)
 
     let updateValue (comp: EcsComponent<'c>) (value: 'c inref) : unit =
         let vp = comp.Pointer
-//        assert (vp <> IntPtr.Zero.ToPointer())
+        assert (VoidPtr.isNotNull vp)
         let p = &Unsafe.AsRef<'c>(vp)
         let value = value
         p <- value
