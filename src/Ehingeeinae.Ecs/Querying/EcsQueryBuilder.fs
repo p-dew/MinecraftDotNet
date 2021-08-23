@@ -1,4 +1,5 @@
-namespace Ehingeeinae.Ecs.Querying
+[<AutoOpen>]
+module Ehingeeinae.Ecs.Querying.Builders
 
 open System
 open System.ComponentModel
@@ -46,6 +47,4 @@ type EcsQueryBuilder() =
         raise <| NotSupportedException("Too many component types")
 
 
-[<AutoOpen>]
-module EcsQueryBuilderImpl =
-    let ecsQuery = EcsQueryBuilder()
+let ecsQuery = EcsQueryBuilder()
