@@ -168,42 +168,42 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
         let shape = shapeof<'TTuple>
         match shape with
         | Shape.Tuple (:? ShapeTuple<'TTuple> as shapeTuple) ->
-            let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
-            let archetype = EcsArchetype.createOfTypes compTypes
-            let storage = getStorage archetype
             let mkAddComp (shapeElement: IShapeMember<'TTuple>) =
                 shapeElement.Accept({ new IMemberVisitor<'TTuple, _> with
                     member _.Visit<'c>(shapeElement) =
-                        fun compTuple ->
+                        fun (storage: ArchetypeStorage) compTuple ->
                             let comp = shapeElement.Get(compTuple)
                             let col = storage.GetColumn<'c>()
                             col.Add(comp)
                 })
             let addComps = shapeTuple.Elements |> Array.map mkAddComp
+            let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
+            let archetype = EcsArchetype.createOfTypes compTypes
+            let storage = getStorage archetype
             fun (compTuple: 'TTuple) ->
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
-                addComps |> Array.iter (fun addComp -> addComp compTuple)
+                addComps |> Array.iter (fun addComp -> addComp storage compTuple)
                 eid
         // Single value
-        | Shape.Struct shapeStruct ->
+        | _ ->
             let compTypes = [ typeof<'TTuple> ]
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
             let addComp =
-                shapeStruct.Accept({ new IStructVisitor<_> with
-                    member _.Visit() =
+//                shapeStruct.Accept({ new IStructVisitor<_> with
+//                    member _.Visit() =
                         fun comp ->
                             let col = storage.GetColumn<'TTuple>()
                             col.Add(comp)
-                })
+//                })
             fun comp ->
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
                 addComp comp
                 eid
-        | _ ->
-            raise <| NotSupportedException($"Type '%O{typeof<'TTuple>}' is not supported for component set representation")
+//        | _ ->
+//            raise <| NotSupportedException($"Type '%O{typeof<'TTuple>}' is not supported for component set representation")
 
     member this.AddEntity<'TTuple>(t: 'TTuple): EcsEntityId =
         let addEntity =
