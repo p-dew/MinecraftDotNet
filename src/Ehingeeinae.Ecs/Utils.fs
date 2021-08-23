@@ -1,9 +1,11 @@
 [<AutoOpen>]
-module Ehingeeinae.Ecs.Utils
+module internal Ehingeeinae.Ecs.Utils
+
+open System
+
 
 module ResizeArray =
 
-    open System
     open System.Reflection
     open System.Collections.Generic
 
@@ -24,9 +26,8 @@ module ResizeArray =
 type ByRefAction<'T> = delegate of 'T byref -> unit
 type ByRefAction<'T1, 'T2> = delegate of 'T1 byref * 'T2 byref -> unit
 
-module ArraySeq =
 
-    open System
+module ArraySeq =
 
     let iter1 (chunks: 'a[] seq) (f: ByRefAction<'a>) : unit =
         chunks
@@ -47,3 +48,8 @@ module ArraySeq =
                 let mutable x2 = &span2.[i]
                 f.Invoke(&x1, &x2)
         )
+
+
+[<RequireQualifiedAccess>]
+module VoidPtr =
+    let inline isNotNull (p: voidptr) = IntPtr(p) <> IntPtr.Zero
