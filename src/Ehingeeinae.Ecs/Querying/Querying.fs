@@ -8,35 +8,90 @@ open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
 
 
-[<Struct>]
-type EcsComponent<'comp> =
-    internal
-        { Pointer: voidptr }
+//[<Struct>]
+//type EcsComponent<'comp> =
+//    internal
+//        { Pointer: voidptr }
 
-module EcsComponent =
+//type IEcsComponent<'c> =
+//    internal abstract Pointer: voidptr
+
+[<Struct>]
+type EcsReadComponent<'c> = internal { Pointer: voidptr }
+
+[<Struct>]
+type EcsWriteComponent<'c> = internal { Pointer: voidptr }
+
+module EcsReadComponent =
 
     open System.Runtime.CompilerServices
 
-    let internal cast (c: 'c byref) : EcsComponent<'c> =
+    let inline internal cast (c: 'c inref) : EcsReadComponent<'c> =
+        let c: 'c byref = &Unsafe.AsRef(&c) // inref to byref
         let p = Unsafe.AsPointer(&c)
         { Pointer = p }
 
-    let getValue (comp: EcsComponent<'c>) : 'c inref =
+    let getValue (comp: EcsReadComponent<'c>) : 'c inref =
         let vp = comp.Pointer
         assert (VoidPtr.isNotNull vp)
         &Unsafe.AsRef<'c>(vp)
 
-    let updateValue (comp: EcsComponent<'c>) (value: 'c inref) : unit =
+module EcsWriteComponent =
+
+    open System.Runtime.CompilerServices
+
+    let inline internal cast (c: 'c byref) : EcsWriteComponent<'c> =
+        let p = Unsafe.AsPointer(&c)
+        { Pointer = p }
+
+    let getValue (comp: EcsWriteComponent<'c>) : 'c inref =
+        let vp = comp.Pointer
+        assert (VoidPtr.isNotNull vp)
+        &Unsafe.AsRef<'c>(vp)
+
+    let setValue (comp: EcsWriteComponent<'c>) (value: 'c inref) : unit =
         let vp = comp.Pointer
         assert (VoidPtr.isNotNull vp)
         let p = &Unsafe.AsRef<'c>(vp)
-        let value = value
+        let value = value // dereference
         p <- value
+
+//module EcsComponent =
+//
+//    open System.Runtime.CompilerServices
+//
+//    let internal cast (c: 'c byref) : EcsComponent<'c> =
+//        let p = Unsafe.AsPointer(&c)
+//        { Pointer = p }
+//
+//    let getValue (comp: EcsComponent<'c>) : 'c inref =
+//        let vp = comp.Pointer
+//        assert (VoidPtr.isNotNull vp)
+//        &Unsafe.AsRef<'c>(vp)
+//
+//    let updateValue (comp: EcsComponent<'c>) (value: 'c inref) : unit =
+//        let vp = comp.Pointer
+//        assert (VoidPtr.isNotNull vp)
+//        let p = &Unsafe.AsRef<'c>(vp)
+//        let value = value
+//        p <- value
 
 [<AutoOpen>]
 module EcsComponentExtensions =
-    type EcsComponent<'c> with
-        member this.Value = EcsComponent.getValue this
+
+    type EcsReadComponent<'c> with
+        member this.Value = &EcsReadComponent.getValue this
+
+    type EcsWriteComponent<'c> with
+        member this.Value
+            with get(): 'c inref = &EcsWriteComponent.getValue this
+            and set(c: 'c inref) = EcsWriteComponent.setValue this &c
+
+    let foo () =
+        let comp: EcsWriteComponent<int> = Unchecked.defaultof<_>
+        let x = 1
+        comp.Value <- &x
+        ()
 
 
 // Based on Rust Amethyst Legion
@@ -62,13 +117,19 @@ module private Utils =
 
     [<RequireQualifiedAccess>]
     module Shape =
-        let (|EcsComponent|_|) (shape: TypeShape) =
+        let (|EcsWriteComponent|EcsReadComponent|NotEcsComponent|) (shape: TypeShape) =
             match shape.ShapeInfo with
-            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsComponent<_>> ->
-                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
-                :?> IShapeEcsComponent
-                |> Some
-            | _ -> None
+            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsReadComponent<_>> ->
+                let shapeEcsComponent =
+                    Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
+                    :?> IShapeEcsComponent
+                EcsReadComponent shapeEcsComponent
+            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsWriteComponent<_>> ->
+                let shapeEcsComponent =
+                    Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
+                    :?> IShapeEcsComponent
+                EcsWriteComponent shapeEcsComponent
+            | _ -> NotEcsComponent
 
     type SetTuple<'TTuple> = delegate of 'TTuple byref * ComponentColumn * int -> 'TTuple
 
@@ -84,20 +145,29 @@ module EcsQuery =
                 shapeTuple.Elements
                 |> Array.map (fun shapeElement ->
                     match shapeElement.Member with
-                    | Shape.EcsComponent shapeEcsComp ->
+                    | Shape.EcsWriteComponent shapeEcsComp ->
                         shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
                             member _.Visit<'c>() =
-                                match shapeElement with
-                                | :? ShapeMember<'q, EcsComponent<'c>> as shapeElement ->
-                                    SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
-                                        let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
-                                        let c = &arr.Array.[i]
-                                        let ec = EcsComponent.cast &c
-                                        // TODO: This setter does boxing. Use something else
-                                        shapeElement.Set q ec
-                                    )
-                                | _ ->
-                                    failwith "not EcsComp<'c>"
+                                let shapeElement = shapeElement :?> ShapeMember<'q, EcsWriteComponent<'c>> // This cast is covered by the above active pattern
+                                SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
+                                    let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
+                                    let c = &arr.Array.[i]
+                                    let ec = EcsWriteComponent.cast &c
+                                    // TODO: This setter does boxing. Use something else
+                                    shapeElement.Set q ec
+                                )
+                        })
+                    | Shape.EcsReadComponent shapeEcsComp ->
+                        shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
+                            member _.Visit<'c>() =
+                                let shapeElement = shapeElement :?> ShapeMember<'q, EcsReadComponent<'c>> // This cast is covered by the above active pattern
+                                SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
+                                    let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
+                                    let c = &arr.Array.[i]
+                                    let ec = EcsReadComponent.cast &c
+                                    // TODO: This setter does boxing. Use something else
+                                    shapeElement.Set q ec
+                                )
                         })
                     | _ ->
                         failwith "not ShapeEcsComp"

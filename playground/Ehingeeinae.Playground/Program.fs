@@ -61,11 +61,11 @@ let work (services: IServiceProvider) =
 
     logger.LogInformation($"World seeded: %A{world}")
 
-    let q = ecsQuery { EcsQueryC.comp<Position>; EcsQueryC.comp<Velocity> } |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
+    let q = EcsQuery.query<struct(EcsWriteComponent<Position> * EcsReadComponent<Velocity>)> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
     let comps = worldQueryExecutor.ExecuteQuery(q)
-    for (position: EcsComponent<Position>), (velocity: EcsComponent<Velocity>) in comps do
+    for position, velocity in comps do
         let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-        EcsComponent.updateValue position &newPosition
+        EcsWriteComponent.setValue position &newPosition
 
     logger.LogInformation($"World result: %A{world}")
 
