@@ -184,11 +184,11 @@ type private AddEntityFunction<'cs> private () =
 // --
 
 type IEcsWorldEntityManager =
-    abstract AddEntity<'cs> : cs: 'cs -> EcsEntityId
+    abstract AddEntity: cs: 'cs -> EcsEntityId
     abstract AddEntities: css: #IReadOnlyList<'cs>-> IReadOnlyList<EcsEntityId>
     abstract RemoveEntity: eid: EcsEntityId -> unit
-    abstract AddComponent<'cs> : cs: 'cs * eid: EcsEntityId -> unit
-    abstract RemoveComponent<'cs> : cs: 'cs * eid: EcsEntityId -> unit
+    abstract AddComponent: cs: 'cs * eid: EcsEntityId -> unit
+    abstract RemoveComponent: cs: 'cs * eid: EcsEntityId -> unit
     abstract TryGetEntityView: eid: EcsEntityId -> IEcsEntityView option
 
 
