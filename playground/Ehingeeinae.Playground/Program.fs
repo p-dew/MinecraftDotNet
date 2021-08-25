@@ -41,7 +41,7 @@ type LargeComponent =
     { DX0: DecimalX10; DX1: DecimalX10; DX2: DecimalX10; DX3: DecimalX10 }
 
 
-let test (logger: ILogger) (entityManager: EcsWorldEntityManager) =
+let test (logger: ILogger) (entityManager: IEcsWorldEntityManager) =
     for i in 0 .. 999999 do
         if i % 1000 = 0 then logger.LogInformation($"i: {i}")
         entityManager.AddEntity(({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) }, Unchecked.defaultof<LargeComponent>)) |> ignore
@@ -55,9 +55,13 @@ let work (services: IServiceProvider) =
 
     logger.LogInformation($"World init: %A{world}")
 
-    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2( 1f,  1f) }) |> ignore
-    worldEntityManager.AddEntity({ Position = Vector2(-2f, -2f) }, { Velocity = Vector2(-1f, -1f) }) |> ignore
-    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
+    (worldEntityManager :> IEcsWorldEntityManager).AddEntities([
+        ({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2( 1f,  1f) })
+        ({ Position = Vector2(-2f, -2f) }, { Velocity = Vector2(-1f, -1f) })
+    ]) |> ignore
+    (worldEntityManager :> IEcsWorldEntityManager).AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
+
+    worldEntityManager.Commit()
 
     logger.LogInformation($"World seeded: %A{world}")
 
