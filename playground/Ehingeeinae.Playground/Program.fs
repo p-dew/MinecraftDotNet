@@ -83,7 +83,8 @@ let work (services: IServiceProvider) =
         ({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2( 1f,  1f) })
         ({ Position = Vector2(-2f, -2f) }, { Velocity = Vector2(-1f, -1f) })
     ]) |> ignore
-    (worldEntityManager :> IEcsWorldEntityManager).AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
+    let eid = (worldEntityManager :> IEcsWorldEntityManager).AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody())
+    (worldEntityManager :> IEcsWorldEntityManager).RemoveEntity(eid)
 
     worldEntityManager.Commit()
 
