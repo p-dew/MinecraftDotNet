@@ -135,13 +135,13 @@ module EcsWorld =
 
 // --
 
-type private AddEntityFunction<'TTuple> private () =
+type private AddEntityFunction<'cs> private () =
     static member val Instance =
-        let shape = shapeof<'TTuple>
+        let shape = shapeof<'cs>
         match shape with
-        | Shape.Tuple (:? ShapeTuple<'TTuple> as shapeTuple) ->
-            let mkAddComp (shapeElement: IShapeMember<'TTuple>) =
-                shapeElement.Accept({ new IMemberVisitor<'TTuple, _> with
+        | Shape.Tuple (:? ShapeTuple<'cs> as shapeTuple) ->
+            let mkAddComp (shapeElement: IShapeMember<'cs>) =
+                shapeElement.Accept({ new IMemberVisitor<'cs, _> with
                     member _.Visit<'c>(shapeElement) =
                         fun (storage: ArchetypeStorage) compTuple ->
                             let comp = shapeElement.Get(compTuple)
@@ -151,7 +151,7 @@ type private AddEntityFunction<'TTuple> private () =
             let addComps = shapeTuple.Elements |> Array.map mkAddComp
             let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
             let archetype = EcsArchetype.createOfTypes compTypes
-            fun (getStorage: EcsArchetype -> ArchetypeStorage) createNextEid -> fun (compTuple: 'TTuple) ->
+            fun (getStorage: EcsArchetype -> ArchetypeStorage) createNextEid -> fun (compTuple: 'cs) ->
                 let storage = getStorage archetype
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
@@ -161,11 +161,11 @@ type private AddEntityFunction<'TTuple> private () =
         | _ ->
             let addComp =
                 fun (storage: ArchetypeStorage) comp ->
-                    let col = storage.GetColumn<'TTuple>()
+                    let col = storage.GetColumn<'cs>()
                     col.Add(comp)
-            let compTypes = [ typeof<'TTuple> ]
+            let compTypes = [ typeof<'cs> ]
             let archetype = EcsArchetype.createOfTypes compTypes
-            fun (getStorage: EcsArchetype -> ArchetypeStorage) createNextEid -> fun (comp: 'TTuple) ->
+            fun (getStorage: EcsArchetype -> ArchetypeStorage) createNextEid -> fun (comp: 'cs) ->
                 let storage = getStorage archetype
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
@@ -203,12 +203,12 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
 
     let cachedAddEntity = Dictionary<Type, obj>()
 
-    let mkAddEntity () : 'TTuple -> EcsEntityId =
-        let shape = shapeof<'TTuple>
+    let mkAddEntity () : 'cs -> EcsEntityId =
+        let shape = shapeof<'cs>
         match shape with
-        | Shape.Tuple (:? ShapeTuple<'TTuple> as shapeTuple) ->
-            let mkAddComp (shapeElement: IShapeMember<'TTuple>) =
-                shapeElement.Accept({ new IMemberVisitor<'TTuple, _> with
+        | Shape.Tuple (:? ShapeTuple<'cs> as shapeTuple) ->
+            let mkAddComp (shapeElement: IShapeMember<'cs>) =
+                shapeElement.Accept({ new IMemberVisitor<'cs, _> with
                     member _.Visit<'c>(shapeElement) =
                         fun (storage: ArchetypeStorage) compTuple ->
                             let comp = shapeElement.Get(compTuple)
@@ -219,19 +219,19 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
             let compTypes = shapeTuple.Elements |> Seq.map (fun e -> e.Member.Type)
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
-            fun (compTuple: 'TTuple) ->
+            fun (compTuple: 'cs) ->
                 let eid = createNextEid ()
                 storage.Ids.Add(eid)
                 addComps |> Array.iter (fun addComp -> addComp storage compTuple)
                 eid
         // Single value
         | _ ->
-            let compTypes = [ typeof<'TTuple> ]
+            let compTypes = [ typeof<'cs> ]
             let archetype = EcsArchetype.createOfTypes compTypes
             let storage = getStorage archetype
             let addComp =
                 fun comp ->
-                    let col = storage.GetColumn<'TTuple>()
+                    let col = storage.GetColumn<'cs>()
                     col.Add(comp)
             fun comp ->
                 let eid = createNextEid ()
@@ -239,17 +239,17 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
                 addComp comp
                 eid
 //        | _ ->
-//            raise <| NotSupportedException($"Type '%O{typeof<'TTuple>}' is not supported for component set representation")
+//            raise <| NotSupportedException($"Type '%O{typeof<'cs>}' is not supported for component set representation")
 
-    member this.AddEntity<'TTuple>(t: 'TTuple): EcsEntityId =
-        AddEntityFunction<'TTuple>.Instance getStorage createNextEid t
+    member this.AddEntity<'cs>(t: 'cs): EcsEntityId =
+        AddEntityFunction<'cs>.Instance getStorage createNextEid t
 //        let addEntity =
-//            match cachedAddEntity.TryGetValue(typeof<'TTuple>) with
-//            | true, (:? ('TTuple -> EcsEntityId) as f) -> f
+//            match cachedAddEntity.TryGetValue(typeof<'cs>) with
+//            | true, (:? ('cs -> EcsEntityId) as f) -> f
 //            | _ ->
-//                logger.LogDebug($"Make new AddEntity<'TTuple> for type '%O{typeof<'TTuple>}'")
+//                logger.LogDebug($"Make new AddEntity<'cs> for type '%O{typeof<'cs>}'")
 //                let addEntity = mkAddEntity()
-//                cachedAddEntity.[typeof<'TTuple>] <- addEntity
+//                cachedAddEntity.[typeof<'cs>] <- addEntity
 //                addEntity
 //        addEntity t
 
