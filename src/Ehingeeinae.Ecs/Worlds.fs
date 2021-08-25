@@ -116,11 +116,11 @@ type ArchetypeStorage(archetype: EcsArchetype) =
         for i in 0 .. ids.Count - 1 do
             sb.Append("    ") |> ignore
             let (EcsEntityId eid) = ids.[i]
-            sb.Append($"<{eid}>{{ ") |> ignore
+            sb.Append($"<{eid}>( ") |> ignore
             for col in cols do
                 let c = col.[i]
                 sb.Append(c).Append(", ") |> ignore
-            sb.AppendLine("}") |> ignore
+            sb.AppendLine(")") |> ignore
         sb.Append("]") |> ignore
         sb.ToString()
 
