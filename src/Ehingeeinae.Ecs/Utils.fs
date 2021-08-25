@@ -3,6 +3,7 @@ module internal Ehingeeinae.Ecs.Utils
 
 open System
 
+let inline ( ^ ) f x = f x
 
 module ResizeArray =
 

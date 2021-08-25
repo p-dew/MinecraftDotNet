@@ -21,6 +21,30 @@ open Ehingeeinae.Ecs.Worlds
 open Ehingeeinae.Ecs.Querying
 open Ehingeeinae.Playground
 
+module Example2 =
+
+    [<Struct>]
+    type Position =
+        { Position: Vector3 }
+
+    [<Struct>]
+    type Player = struct end
+
+    [<Struct>]
+    type Entity = struct end
+
+    [<Struct>]
+    type ToUnload = struct end
+
+    let foo (entityManager: IEcsWorldEntityManager) (queryExecutor: EcsWorldQueryExecutor) =
+        let q = EcsQuery.query<EcsReadComponent<Position> * EcsReadComponent<Player>>
+        let players = queryExecutor.ExecuteQuery(q)
+        for playerPosition, _ in players do
+
+            ()
+        ()
+
+    ()
 
 [<Struct>]
 type Position =
@@ -97,28 +121,4 @@ let createHostBuilder args =
 let main args =
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
     (createHostBuilder args).Build().Run()
-
-//    test ()
-//    exit 0
-//
-//    printfn $"World init: %A{world}"
-//
-//    worldManager.AddEntity1(EcsEntityId 1UL) |> ignore
-//
-//    let eid1 = worldManager.AddEntityN()({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) })
-//    let eid2 = worldManager.AddEntityN()({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(-1f, -1f) })
-//
-//    printfn $"World seed: %A{world}"
-//
-//    worldManager.QueryComponent2<Position, Velocity>()
-//    |> Seq.map (fun (a1, a2) -> (a1.AsMemory(), a2.AsMemory()))
-//    |> ArraySeq.iter2 (ByRefAction<_, _> (fun position velocity ->
-//        let pPosition = NativePtr.ofVoidPtr<Position> (Unsafe.AsPointer(&position))
-//        NativePtr.set pPosition 0 { Position = Vector2.Add(position.Position, velocity.Velocity) }
-//
-////        position <- { Position = Vector2.Add(position.Position, velocity.Velocity) }
-//        ()
-//    ))
-//
-//    printfn $"World result: %A{world}"
     0

@@ -131,12 +131,13 @@ module private Utils =
                 EcsWriteComponent shapeEcsComponent
             | _ -> NotEcsComponent
 
-    type SetTuple<'TTuple> = delegate of 'TTuple byref * ComponentColumn * int -> 'TTuple
+    type SetTuple<'TTuple> = delegate of 'TTuple byref * IComponentColumn * int -> 'TTuple
 
 
 [<RequireQualifiedAccess>]
 module EcsQuery =
 
+    [<RequiresExplicitTypeArguments>]
     let query<'q> : IEcsQuery<'q> =
         let shape = shapeof<'q>
         match shape with
@@ -149,8 +150,8 @@ module EcsQuery =
                         shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
                             member _.Visit<'c>() =
                                 let shapeElement = shapeElement :?> ShapeMember<'q, EcsWriteComponent<'c>> // This cast is covered by the above active pattern
-                                SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
-                                    let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
+                                SetTuple (fun (q: 'q byref) (col: IComponentColumn) (i: int) ->
+                                    let arr = col |> ComponentColumn.unbox<'c> |> fun col -> ResizeArray.getItems col.ResizeArray
                                     let c = &arr.Array.[i]
                                     let ec = EcsWriteComponent.cast &c
                                     // TODO: This setter does boxing. Use something else
@@ -161,8 +162,8 @@ module EcsQuery =
                         shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
                             member _.Visit<'c>() =
                                 let shapeElement = shapeElement :?> ShapeMember<'q, EcsReadComponent<'c>> // This cast is covered by the above active pattern
-                                SetTuple (fun (q: 'q byref) (col: ComponentColumn) (i: int) ->
-                                    let arr = col |> ComponentColumn.unbox<'c> |> ResizeArray.getItems
+                                SetTuple (fun (q: 'q byref) (col: IComponentColumn) (i: int) ->
+                                    let arr = col |> ComponentColumn.unbox<'c> |> fun col -> ResizeArray.getItems col.ResizeArray
                                     let c = &arr.Array.[i]
                                     let ec = EcsReadComponent.cast &c
                                     // TODO: This setter does boxing. Use something else

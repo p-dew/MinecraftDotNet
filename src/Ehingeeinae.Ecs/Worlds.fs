@@ -30,19 +30,45 @@ type EcsArchetypeEqualityComparer() =
         member this.GetHashCode(obj) = hashsetComparer.GetHashCode(obj.ComponentTypes)
 
 
-/// ResizeArray<'comp>
-type ComponentColumn = obj
+
+/// With erased type
+type IComponentColumn =
+    abstract BoxedResizeArray: obj
+    abstract Accept: IComponentColumnVisitor<'R> -> 'R
+
+and ComponentColumn<'c>(rarr: ResizeArray<'c>) =
+    member this.ResizeArray = rarr
+    interface IComponentColumn with
+        member this.BoxedResizeArray = box rarr
+        member this.Accept(visitor: IComponentColumnVisitor<'R>) = visitor.Visit(this)
+
+and IComponentColumnVisitor<'R> =
+    abstract Visit<'c> : ComponentColumn<'c> -> 'R
+
+// /// ResizeArray<'comp>
+// type ComponentColumn = obj
+
 
 module ComponentColumn =
 
-    let inline unbox<'comp> (col: ComponentColumn) : ResizeArray<'comp> =
-        assert (match col with :? ResizeArray<'comp> -> true | _ -> false)
+    let foo (col: IComponentColumn) =
+        col.Accept({ new IComponentColumnVisitor<_> with
+            member _.Visit(col) =
+
+                0
+        })
+
+    [<RequiresExplicitTypeArguments>]
+    let inline unbox<'c> (col: IComponentColumn) : ComponentColumn<'c> =
+        assert (match col with :? ComponentColumn<'c> -> true | _ -> false)
         downcast col
 
-    let createOfTypes (compTypes: Type seq) : ComponentColumn[] =
+    let createOfTypes (compTypes: Type seq) : IComponentColumn[] =
         [| for compType in compTypes ->
-            let t = typedefof<ResizeArray<_>>.MakeGenericType(compType)
-            Activator.CreateInstance(t) |]
+            let t = typedefof<ComponentColumn<_>>.MakeGenericType(compType)
+            let rarrType = typedefof<ResizeArray<_>>.MakeGenericType(compType)
+            let rarr = Activator.CreateInstance(rarrType)
+            Activator.CreateInstance(t, rarr) :?> IComponentColumn |]
 
 //    let inline create1<'c0> () : ComponentColumn[] =
 //        [| ResizeArray<'c0>() |]
@@ -80,46 +106,52 @@ type ArchetypeStorage(archetype: EcsArchetype) =
 
     member _.Count = ids.Count
 
-    /// <returns>ResizeArray&lt;compType&gt;</returns>
-    member this.GetColumn(compType: Type): ComponentColumn =
+    member this.GetColumn(compType: Type): IComponentColumn =
         this.ComponentColumns
         |> Array.pick (fun col ->
-            assert (col.GetType().GetGenericTypeDefinition() = typedefof<ResizeArray<_>>)
+            assert (col.GetType().GetGenericTypeDefinition() = typedefof<ComponentColumn<_>>)
             if col.GetType().GetGenericArguments().[0] = compType then
                 Some col
             else
                 None
         )
 
-    member this.GetColumn<'c>(): ResizeArray<'c> =
+    member this.GetColumn<'c>(): ComponentColumn<'c> =
         this.ComponentColumns
         |> Array.tryPick (function
-            | :? ResizeArray<'c> as col -> Some col
+            | :? ComponentColumn<'c> as col -> Some col
             | _ -> None
         )
-        |> function Some col -> col | None -> failwithf $"Cannot find ComponentColumn<%O{typeof<'c>}>"
+        |> function
+        | Some col -> col
+        | None -> failwithf $"Cannot find ComponentColumn<%O{typeof<'c>}>"
 
     member this.GetEntity(eid: EcsEntityId) =
         let idx = ids |> Seq.findIndex ((=) eid)
         let view = { new IEcsEntityView with
             member _.Archetype = archetype
             member _.GetComponent<'c>(): 'c =
-                let c = this.GetColumn<'c>().[idx]
+                let c = this.GetColumn<'c>().ResizeArray.[idx]
                 c
         }
         view
 
     override this.ToString() =
+        let getsColumnComponentSting =
+            componentColumns
+            |> Array.map ^fun col ->
+                col.Accept({ new IComponentColumnVisitor<_> with
+                    member _.Visit(col) = fun i -> string col.ResizeArray.[i]
+                })
         let sb = StringBuilder()
         sb.AppendLine("[") |> ignore
-        let cols = componentColumns |> Array.map (fun col -> col :?> System.Collections.IEnumerable |> Seq.cast<obj> |> Seq.toArray)
         for i in 0 .. ids.Count - 1 do
+            let getColumnComponentString = getsColumnComponentSting.[i]
             sb.Append("    ") |> ignore
-            let (EcsEntityId eid) = ids.[i]
-            sb.Append($"<{eid}>( ") |> ignore
-            for col in cols do
-                let c = col.[i]
-                sb.Append(c).Append(", ") |> ignore
+            sb.Append($"<{ids.[i].Value}>( ") |> ignore
+            for j in 0 .. componentColumns.Length - 1 do
+                let s = getColumnComponentString j
+                sb.Append(s).Append(", ") |> ignore
             sb.AppendLine(")") |> ignore
         sb.Append("]") |> ignore
         sb.ToString()
@@ -143,10 +175,10 @@ type private AddEntityFunction<'cs> private () =
             let mkAddComp (shapeElement: IShapeMember<'cs>) =
                 shapeElement.Accept({ new IMemberVisitor<'cs, _> with
                     member _.Visit<'c>(shapeElement) =
-                        fun (col: ComponentColumn) cs ->
+                        fun (col: IComponentColumn) cs ->
                             let col = col |> ComponentColumn.unbox<'c>
                             let c = shapeElement.Get(cs)
-                            col.Add(c)
+                            col.ResizeArray.Add(c)
                 })
             let addComps = shapeTuple.Elements |> Array.map mkAddComp
             let cTypes = shapeTuple.Elements |> Array.map (fun e -> e.Member.Type)
@@ -167,9 +199,9 @@ type private AddEntityFunction<'cs> private () =
         // Single value
         | _ ->
             let addComp =
-                fun (storage: ArchetypeStorage) comp ->
+                fun (storage: ArchetypeStorage) c ->
                     let col = storage.GetColumn<'cs>()
-                    col.Add(comp)
+                    col.ResizeArray.Add(c)
             let compTypes = [ typeof<'cs> ]
             let archetype = EcsArchetype.createOfTypes compTypes
             fun (getStorage: EcsArchetype -> ArchetypeStorage) (eids: EcsEntityId[]) ->
@@ -231,7 +263,22 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
 
         member this.AddComponent(cs, eid) = failwith "todo"
         member this.RemoveComponent(cs, eid) = failwith "todo"
-        member this.RemoveEntity(eid) = failwith "todo"
+        member this.RemoveEntity(eid) =
+            // let action () =
+            //     let r =
+            //         world.Archetypes
+            //         |> Seq.tryPick ^fun (KeyValue (_, storage)) ->
+            //             let idx = storage.Ids.IndexOf(eid)
+            //             if idx = -1
+            //             then None
+            //             else Some (idx, storage)
+            //     match r with
+            //     | None -> raise ^ KeyNotFoundException($"{eid}")
+            //     | Some (idx, storage) ->
+            //         storage.Ids.RemoveAt(idx)
+            //         storage.
+            //         ()
+            ()
         member this.TryGetEntityView(eid) = failwith "todo"
 
 
