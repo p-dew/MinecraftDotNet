@@ -2,19 +2,9 @@ namespace Ehingeeinae.Ecs.Querying
 
 open System
 
-open TypeShape.Core
-
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
 
-
-//[<Struct>]
-//type EcsComponent<'comp> =
-//    internal
-//        { Pointer: voidptr }
-
-//type IEcsComponent<'c> =
-//    internal abstract Pointer: voidptr
 
 [<Struct>]
 type EcsReadComponent<'c> = internal { Pointer: voidptr }
@@ -38,6 +28,7 @@ module EcsReadComponent =
         let vp = comp.Pointer
         assert (VoidPtr.isNotNull vp)
         &Unsafe.AsRef<'c>(vp)
+
 
 module EcsWriteComponent =
 
@@ -87,6 +78,8 @@ type IEcsQuery<'q> =
 [<AutoOpen>]
 module private Utils =
 
+    open TypeShape.Core
+
     type IEcsComponentVisitor<'R> =
         abstract Visit<'c> : unit -> 'R
 
@@ -117,173 +110,122 @@ module private Utils =
                 EcsEntityId
             | _ -> NotEcsComponent
 
-    type SetTuple<'TTuple> = delegate of 'TTuple byref * IComponentColumn * int -> 'TTuple
+
+[<RequireQualifiedAccess>]
+module Expr =
+
+    open FSharp.Quotations
+
+    let lambdaMany (parameters: Var list) (body: Expr) : Expr =
+        let rec foo parameters =
+            match parameters with
+            | [] -> invalidOp ""
+            | parameter :: ((_ :: _) as tail) ->
+                Expr.Lambda(parameter, foo tail)
+            | [parameter] -> Expr.Lambda(parameter, body)
+        foo parameters
 
 
 [<RequireQualifiedAccess>]
 module EcsQuery =
 
-    open System
     open System.Reflection
-    open System.Reflection.Emit
-    open System.Runtime.CompilerServices
+
     open FSharp.Quotations
     open FSharp.Quotations.Evaluator
-    open System.Linq.Expressions
     open Microsoft.FSharp.Reflection
+    open TypeShape.Core
 
     type internal Marker = class end
 
-    let getComp (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : EcsReadComponent<'c> =
+    let private getComponentRef (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : 'c byref =
         let col = cols.[idxCol]
         let col = col |> ComponentColumn.unbox<'c>
         let arr = col.Components |> ResizeArray.getItems
-        let ca = &arr.Array.[idxEntity]
+        &arr.Array.[idxEntity]
+
+    [<RequiresExplicitTypeArguments>]
+    let getReadComponent (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : EcsReadComponent<'c> =
+        let ca = &getComponentRef cols idxCol idxEntity
         EcsReadComponent.cast &ca
+
+    [<RequiresExplicitTypeArguments>]
+    let getWriteComponent (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : EcsWriteComponent<'c> =
+        let ca = &getComponentRef cols idxCol idxEntity
+        EcsWriteComponent.cast &ca
+
+    let getEid (eids: ArraySegment<EcsEntityId>) (idxEntity: int) : EcsEntityId =
+        eids.[idxEntity]
 
     [<RequiresExplicitTypeArguments>]
     let query<'q> : IEcsQuery<'q> =
         let shape = shapeof<'q>
         match shape with
         | Shape.Tuple (:? ShapeTuple<'q> as shapeTuple) ->
-            // let fs_setTupleItem: SetTuple<'q>[] =
-            //     shapeTuple.Elements
-            //     |> Array.map (fun shapeElement ->
-            //         match shapeElement.Member with
-            //         | Shape.EcsWriteComponent shapeEcsComp ->
-            //             shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
-            //                 member _.Visit<'c>() =
-            //                     let shapeElement = shapeElement :?> ShapeMember<'q, EcsWriteComponent<'c>> // This cast is covered by the above active pattern
-            //                     SetTuple (fun (q: 'q byref) (col: IComponentColumn) (i: int) ->
-            //                         let arr = col |> ComponentColumn.unbox<'c> |> fun col -> ResizeArray.getItems col.Components
-            //                         let c = &arr.Array.[i]
-            //                         let ec = EcsWriteComponent.cast &c
-            //                         // TODO: This setter does boxing. Use something else
-            //                         shapeElement.Set q ec
-            //                     )
-            //             })
-            //         | Shape.EcsReadComponent shapeEcsComp ->
-            //             shapeEcsComp.Accept({ new IEcsComponentVisitor<_> with
-            //                 member _.Visit<'c>() =
-            //                     let shapeElement = shapeElement :?> ShapeMember<'q, EcsReadComponent<'c>> // This cast is covered by the above active pattern
-            //                     SetTuple (fun (q: 'q byref) (col: IComponentColumn) (i: int) ->
-            //                         let arr = col |> ComponentColumn.unbox<'c> |> fun col -> ResizeArray.getItems col.Components
-            //                         let c = &arr.Array.[i]
-            //                         let ec = EcsReadComponent.cast &c
-            //                         // TODO: This setter does boxing. Use something else
-            //                         shapeElement.Set q ec
-            //                     )
-            //             })
-            //         | Shape.EcsEntityId ->
-            //             raise ^ NotImplementedException()
-            //         | _ ->
-            //             failwith "not ShapeEcsComp"
-            //     )
-
             let cTypes = shapeTuple.Elements |> Array.map (fun e -> e.Member.Type.GetGenericArguments().[0])
+            let compTypes =
+                shapeTuple.Elements
+                |> Array.collect ^fun shapeItem ->
+                    match shapeItem.Member with
+                    | Shape.EcsReadComponent _ | Shape.EcsWriteComponent _ -> [| shapeItem.Member.Type |]
+                    | _ -> [| |]
             let qcTypes = FSharpType.GetTupleElements(typeof<'q>)
-            let colCount = cTypes.Length
+            let itemCount = shapeTuple.Elements.Length
 
-            let mid_getComp = typeof<Marker>.DeclaringType.GetMethod("getComp")
-
-            let getQExpr: Expr<IComponentColumn[] -> int -> 'q> =
+            let resolveQueryExpr: Expr<ArraySegment<EcsEntityId> -> IComponentColumn[] -> int -> 'q> =
+                // Из-за того, что каждая ветка в этой лямбде возвращает разный (в зависимости от кортежа 'q) тип,
+                // чтобы обратно это можно было сконструировать, надо использовать quotations
+                let eidsVar = Var("eids", typeof<ArraySegment<EcsEntityId>>)
                 let colsVar = Var("cols", typeof<IComponentColumn[]>)
-                let cols = Expr.Var(colsVar) |> Expr.Cast<IComponentColumn[]>
-                Expr.Lambda(
-                    colsVar,
-                    let idxEntityVar = Var("idxEntity", typeof<int>)
+                let idxEntityVar = Var("idxEntity", typeof<int>)
+                Expr.lambdaMany [eidsVar; colsVar; idxEntityVar] (
+                    let eids = Expr.Var(eidsVar)
+                    let cols = Expr.Var(colsVar) |> Expr.Cast<IComponentColumn[]>
                     let idxEntity = Expr.Var(idxEntityVar) |> Expr.Cast<int>
-                    Expr.Lambda(
-                        idxEntityVar,
-                        // ----
-                        let items = [
-                            for idxCol in 0 .. colCount - 1 do
-                                let cType = cTypes.[idxCol]
-                                let mi_getComp = mid_getComp.MakeGenericMethod(cType)
-                                let qc = Expr.Call(mi_getComp, [cols; Expr.Value(idxCol); idxEntity])
-                                qc
-                        ]
+                    let items = [
+                        for idxCol in 0 .. itemCount - 1 do
+                            let shapeItem = shapeTuple.Elements.[idxCol]
+                            match shapeItem.Member with
+                            | Shape.EcsEntityId ->
+                                <@@ getEid %%eids %idxEntity @@>
+                            | Shape.EcsReadComponent shape ->
+                                shape.Accept({ new IEcsComponentVisitor<_> with
+                                    member _.Visit<'c>() =
+                                        <@@ getReadComponent<'c> %cols idxCol %idxEntity @@>
+                                })
+                            | Shape.EcsWriteComponent shape ->
+                                shape.Accept({ new IEcsComponentVisitor<_> with
+                                    member _.Visit<'c>() =
+                                        <@@ getWriteComponent<'c> %cols idxCol %idxEntity @@>
+                                })
+                            | _ ->
+                                invalidOp $"Type {qcTypes.[idxCol]} (at {idxCol} position) is not supported as query element"
+                    ]
+                    if shapeTuple.IsStructTuple then
+                        let asm = Assembly.GetExecutingAssembly() // TODO: Which assembly should be used?
+                        Expr.NewStructTuple(asm, items)
+                    else
                         Expr.NewTuple(items)
-                        // ----
-                    )
                 )
                 |> Expr.Cast
 
-            // let method =
-            //     DynamicMethod(
-            //         "CreateQueryResultFromColumnsAndEIdx",
-            //         typeof<'q>, [| typeof<IComponentColumn[]>; typeof<int> |],
-            //         restrictedSkipVisibility=true
-            //     )
-            // let il = method.GetILGenerator()
-            //
-            // let locals = [
-            //     for iCol in 0 .. qcTypes.Length - 1 do
-            //         let qcType = qcTypes.[iCol]
-            //         let cType = qcType.GetGenericArguments().[0]
-            //         let componentColumnType = typedefof<ComponentColumn<_>>.MakeGenericType(cType)
-            //
-            //         let rarrField = componentColumnType.GetField("rarr", BindingFlags.NonPublic ||| BindingFlags.Instance)
-            //         assert (rarrField <> null)
-            //         let itemsField = typedefof<ResizeArray<_>>.MakeGenericType(qcType).GetField("_items", BindingFlags.NonPublic ||| BindingFlags.Instance)
-            //         assert (itemsField <> null)
-            //
-            //         // (let) arr = (cols.[iCol] :> ComponentColumn<cType>).Components._items
-            //         il.Emit(OpCodes.Ldarg_0)
-            //         il.EmitWriteLine("ldarg.0")
-            //         il.Emit(OpCodes.Ldc_I4, iCol)
-            //         il.EmitWriteLine("ldc.i4 iCol")
-            //         il.Emit(OpCodes.Ldelem_I4)
-            //         il.EmitWriteLine("ldelem.i4")
-            //         // il.Emit(OpCodes.Castclass, componentColumnType)
-            //         // il.EmitWriteLine("castclass componentColumnType")
-            //         il.Emit(OpCodes.Ldfld, rarrField)
-            //         il.EmitWriteLine("ldfld rarrField")
-            //         il.Emit(OpCodes.Ldfld, itemsField)
-            //         il.EmitWriteLine("ldfld itemsField")
-            //
-            //         // let vp = (void*) ref arr.[idxEntity]
-            //         il.Emit(OpCodes.Ldarg_1)
-            //         il.Emit(OpCodes.Ldelema, cType)
-            //         il.Emit(OpCodes.Conv_U)
-            //         let localVp = il.DeclareLocal(typeof<voidptr>)
-            //         il.Emit(OpCodes.Stloc, localVp)
-            //
-            //         // let qc = *(QC*)&vp
-            //         il.Emit(OpCodes.Ldloca, localVp)
-            //         il.Emit(OpCodes.Conv_U)
-            //         il.Emit(OpCodes.Ldobj, qcType)
-            //         let localQc = il.DeclareLocal(qcType)
-            //         il.Emit(OpCodes.Stloc, localQc)
-            //
-            //         yield localQc
-            // ]
-            // for local in locals do
-            //     il.Emit(OpCodes.Ldloc, local)
-            //
-            // let qCtor = typeof<'q>.GetConstructor(qcTypes) // TODO: Tuple.Length > 7
-            // il.Emit(OpCodes.Newobj, qCtor)
-            // il.Emit(OpCodes.Ret)
-            //
-            // let deleg = method.CreateDelegate<Func<IComponentColumn[], int, 'q>>()
+            let getQ: ArraySegment<EcsEntityId> -> IComponentColumn[] -> int -> 'q =
+                // downcast (resolveQueryExpr |> FSharp.Linq.RuntimeHelpers.LeafExpressionConverter.EvaluateQuotation)
+                resolveQueryExpr.Evaluate()
 
+            // FIXME: EcsEntityId in 'q, related with cTypes and indices
             { new IEcsQuery<'q> with
                 member _.Filter(archetype) =
-                    archetype.ComponentTypes.IsSupersetOf(cTypes)
+                    archetype.ComponentTypes.IsSupersetOf(compTypes)
                 member _.Fetch(storage) =
                     let cols = cTypes |> Array.map storage.GetColumn
+                    let eids = storage.Ids |> ResizeArray.getItems
                     let entityCount = storage.Count
-                    let getQ = getQExpr.Evaluate()
                     seq {
                         for idxEntity in 0 .. entityCount - 1 do
-                            yield getQ cols idxEntity
-                            // let mutable tupleInstance = shapeTuple.CreateUninitialized()
-                            // for idxCol in 0 .. cols.Length - 1 do
-                            //     let setTupleItem = fs_setTupleItem.[idxCol]
-                            //     let col = cols.[idxCol]
-                            //     tupleInstance <- setTupleItem.Invoke(&tupleInstance, col, idxEntity)
-                            // yield tupleInstance
+                            yield getQ eids cols idxEntity
                     }
             }
+        // Single value
         | _ ->
             raise <| NotSupportedException($"Type '{typeof<'q>}' is not supported as EcsQuery representation")

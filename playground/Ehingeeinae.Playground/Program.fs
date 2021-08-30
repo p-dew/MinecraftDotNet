@@ -112,22 +112,22 @@ let work (services: IServiceProvider) =
 
     logger.LogInformation($"World seeded: %A{world}")
 
-    // let q = EcsQuery.query<Position cwrite * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
-    //
+    let q = EcsQuery.query<Position cwrite * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
+
+    for i in 0 .. 99999 do
+        if i % 10 = 0 then logger.LogInformation($"i: {i}")
+        let comps = worldQueryExecutor.ExecuteQuery(q)
+        for position, velocity in comps do
+            let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
+            EcsWriteComponent.setValue position &newPosition
+
+    // let q = EcsQuery.query<Position cread * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
     // for i in 0 .. 99 do
     //     if i % 10 = 0 then logger.LogInformation($"i: {i}")
     //     let comps = worldQueryExecutor.ExecuteQuery(q)
     //     for position, velocity in comps do
     //         let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-    //         EcsWriteComponent.setValue position &newPosition
-
-    let q = EcsQuery.query<Position cread * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
-    for i in 0 .. 99 do
-        if i % 10 = 0 then logger.LogInformation($"i: {i}")
-        let comps = worldQueryExecutor.ExecuteQuery(q)
-        for position, velocity in comps do
-            let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-            absorb newPosition
+    //         absorb newPosition
 
     logger.LogInformation($"World result: %A{world}")
 
