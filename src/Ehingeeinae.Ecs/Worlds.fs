@@ -18,10 +18,8 @@ type EcsArchetype =
         $"Archetype[{inner}]"
 
 module EcsArchetype =
-
     let inline createOfTypes (types: Type seq) = { ComponentTypes = HashSet(types) }
-//    let inline create1<'c0> () = createOfTypes [ typeof<'c0> ]
-//    let inline create2<'c0, 'c1> () = createOfTypes [ typeof<'c0>; typeof<'c1> ]
+
 
 type EcsArchetypeEqualityComparer() =
     static let hashsetComparer = HashSet.CreateSetComparer()
@@ -32,23 +30,25 @@ type EcsArchetypeEqualityComparer() =
 
 /// With erased type
 type IComponentColumn =
-    abstract BoxedResizeArray: obj
+    abstract ComponentsBoxed: obj
     abstract Accept: IComponentColumnVisitor<'R> -> 'R
 
 and ComponentColumn<'c>(rarr: ResizeArray<'c>) =
-    member this.ResizeArray = rarr
+    member this.Components = rarr
     interface IComponentColumn with
-        member this.BoxedResizeArray = box rarr
+        member this.ComponentsBoxed = box rarr
         member this.Accept(visitor: IComponentColumnVisitor<'R>) = visitor.Visit(this)
 
 and IComponentColumnVisitor<'R> =
     abstract Visit<'c> : ComponentColumn<'c> -> 'R
 
-// /// ResizeArray<'comp>
-// type ComponentColumn = obj
-
 
 module ComponentColumn =
+
+    let inline tryUnbox<'c> (col: IComponentColumn) : ComponentColumn<'c> option =
+        match col with
+        | :? ComponentColumn<'c> as col -> Some col
+        | _ -> None
 
     [<RequiresExplicitTypeArguments>]
     let inline unbox<'c> (col: IComponentColumn) : ComponentColumn<'c> =
@@ -64,7 +64,7 @@ module ComponentColumn =
 
 type IEcsEntityView =
     abstract Archetype: EcsArchetype
-    abstract GetComponent<'c> : unit -> 'c
+    abstract GetComponent: unit -> 'c
 
 (*
 
@@ -93,11 +93,15 @@ type ArchetypeStorage(archetype: EcsArchetype) =
 
     member _.Count = ids.Count
 
-    member this.GetColumn(compType: Type): IComponentColumn =
+    member this.GetColumn(cType: Type): IComponentColumn =
         this.ComponentColumns
         |> Array.pick (fun col ->
-            assert (col.GetType().GetGenericTypeDefinition() = typedefof<ComponentColumn<_>>)
-            if col.GetType().GetGenericArguments().[0] = compType then
+            let currColType =
+                col.Accept({ new IComponentColumnVisitor<_> with
+                    member _.Visit(_: ComponentColumn<'c>) =
+                        typeof<'c>
+                })
+            if currColType = cType then
                 Some col
             else
                 None
@@ -118,7 +122,7 @@ type ArchetypeStorage(archetype: EcsArchetype) =
         let view = { new IEcsEntityView with
             member _.Archetype = archetype
             member _.GetComponent<'c>(): 'c =
-                let c = this.GetColumn<'c>().ResizeArray.[idx]
+                let c = this.GetColumn<'c>().Components.[idx]
                 c
         }
         view
@@ -128,20 +132,20 @@ type ArchetypeStorage(archetype: EcsArchetype) =
             componentColumns
             |> Array.map ^fun col ->
                 col.Accept({ new IComponentColumnVisitor<_> with
-                    member _.Visit(col) = fun i -> string col.ResizeArray.[i]
+                    member _.Visit(col) = fun i -> string col.Components.[i]
                 })
         let sb = StringBuilder()
         sb.AppendLine("[") |> ignore
         for i in 0 .. ids.Count - 1 do
-            let getColumnComponentString = getsColumnComponentSting.[i]
             sb.Append("    ") |> ignore
-            sb.Append($"<{ids.[i].Value}>( ") |> ignore
+            sb.Append($"[{ids.[i].Value}]( ") |> ignore
             for j in 0 .. componentColumns.Length - 1 do
-                let s = getColumnComponentString j
+                let s = getsColumnComponentSting.[j] i
                 sb.Append(s).Append(", ") |> ignore
             sb.AppendLine(")") |> ignore
         sb.Append("]") |> ignore
         sb.ToString()
+        // sprintf "%A" {| ComponentColumns = componentColumns |> Seq.map (fun col -> col.Accept({ new IComponentColumnVisitor<_> with member _.Visit(col) = sprintf "%A" col.Components })) |}
 
 
 type EcsWorld =
@@ -165,7 +169,7 @@ type private AddEntityFunction<'cs> private () =
                         fun (col: IComponentColumn) cs ->
                             let col = col |> ComponentColumn.unbox<'c>
                             let c = shapeElement.Get(cs)
-                            col.ResizeArray.Add(c)
+                            col.Components.Add(c)
                 })
             let addComps = shapeTuple.Elements |> Array.map mkAddComp
             let cTypes = shapeTuple.Elements |> Array.map (fun e -> e.Member.Type)
@@ -188,7 +192,7 @@ type private AddEntityFunction<'cs> private () =
             let addComp =
                 fun (storage: ArchetypeStorage) c ->
                     let col = storage.GetColumn<'cs>()
-                    col.ResizeArray.Add(c)
+                    col.Components.Add(c)
             let compTypes = [ typeof<'cs> ]
             let archetype = EcsArchetype.createOfTypes compTypes
             fun (getStorage: EcsArchetype -> ArchetypeStorage) (eids: EcsEntityId[]) ->
@@ -206,8 +210,8 @@ type IEcsWorldEntityManager =
     abstract AddEntity: cs: 'cs -> EcsEntityId
     abstract AddEntities: css: #IReadOnlyList<'cs>-> IReadOnlyList<EcsEntityId>
     abstract RemoveEntity: eid: EcsEntityId -> unit
-    abstract AddComponent: cs: 'cs * eid: EcsEntityId -> unit
-    abstract RemoveComponent: cs: 'cs * eid: EcsEntityId -> unit
+    abstract AddComponent: eid: EcsEntityId * cs: 'cs -> unit
+    abstract RemoveComponent: eid: EcsEntityId * cs: 'cs -> unit
     abstract TryGetEntityView: eid: EcsEntityId -> IEcsEntityView option
 
 
@@ -238,18 +242,20 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
         lazyActions.Clear()
 
     interface IEcsWorldEntityManager with
+
         member this.AddEntities(css: #IReadOnlyList<'cs>) =
             let eids = Array.init css.Count (fun _ -> createNextEid ())
             let action () = AddEntityFunction<'cs>.Instance getStorage eids (upcast css)
             lazyActions.Add(action)
             upcast eids
+
         member this.AddEntity(cs) =
             (this :> IEcsWorldEntityManager)
                 .AddEntities([| cs |])
             |> Seq.exactlyOne
 
-        member this.AddComponent(cs, eid) = failwith "todo"
-        member this.RemoveComponent(cs, eid) = failwith "todo"
+        member this.AddComponent(eid, cs) = failwith "todo"
+        member this.RemoveComponent(eid, cs) = failwith "todo"
 
         member this.RemoveEntity(eid) =
             let action () =
@@ -268,7 +274,7 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
                     |> Array.iter ^fun col ->
                         col.Accept({ new IComponentColumnVisitor<_> with
                             member _.Visit(col) =
-                                col.ResizeArray.RemoveAt(idx)
+                                col.Components.RemoveAt(idx)
                                 true
                         }) |> ignore
                     ()
