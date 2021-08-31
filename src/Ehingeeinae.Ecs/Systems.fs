@@ -1,8 +1,11 @@
 namespace Ehingeeinae.Ecs.Systems
 
-//type IEcsSystem =
-//    abstract Update: world: EcsWorld -> unit
-//
+type EcsSystemContext =
+    { DeltaTime: float32 }
+
+type IEcsSystem =
+    abstract Update: ctx: EcsSystemContext -> unit
+
 //
 ////type EcsSystemBuilder() =
 //

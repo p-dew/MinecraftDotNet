@@ -10,12 +10,12 @@
         <Compile Include="Core.fs" />
         <Compile Include="Worlds.fs" />
         <Compile Include="Systems.fs" />
-        <Compile Include="Scheduling.fs" />
         <Compile Include="Querying\Querying.fs" />
         <Compile Include="Querying\QueryOptimized.fs" />
         <Compile Include="Querying\EcsQueryBuilder.fs" />
         <Compile Include="Querying\Filtering.fs" />
         <Compile Include="Querying\Executing.fs" />
+        <Compile Include="Scheduling.fs" />
         <Compile Include="Hosting.fs" />
     </ItemGroup>
 

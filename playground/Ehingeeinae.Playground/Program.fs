@@ -1,5 +1,9 @@
 module Ehingeeinae.Playground.Program
 
+open System.Threading
+open Ehingeeinae.Ecs.Scheduling
+open Ehingeeinae.Ecs.Systems
+
 #nowarn "9"
 
 open System
@@ -24,41 +28,37 @@ open Ehingeeinae.Playground
 
 let inline ( ^ ) f x = f x
 
-type IEcsQueryFactory =
-    abstract CreateQuery<'q> : unit -> IEcsQuery<'q>
-
-type IEcsSystem =
-    abstract Update: unit -> unit
-
-module Example2 =
-
-    [<Struct>]
-    type Position =
-        { Position: Vector3 }
-
-    [<Struct>]
-    type Player = struct end
-
-    [<Struct>]
-    type Entity = struct end
-
-    [<Struct>]
-    type ToUnload = struct end
-
-    type FooSystem(entityManager: IEcsWorldEntityManager, queryExecutor: EcsWorldQueryExecutor) =
-        interface IEcsSystem with
-            member this.Update() =
-                let criticalLength = 10.f
-                let players = EcsQuery.query<Position cread * Player cread> |> queryExecutor.ExecuteQuery
-                let entities = EcsQuery.query<EcsEntityId * Position cread * Entity cread> |> queryExecutor.ExecuteQuery
-                for eid, entityPosition, _ in entities do
-                    let isEnoughFarForUnload =
-                        players
-                        |> Seq.map fst
-                        |> Seq.exists ^fun playerPosition ->
-                            Vector3.Distance(playerPosition.Value.Position, entityPosition.Value.Position) > criticalLength
-                    if isEnoughFarForUnload then
-                        entityManager.AddComponent(eid, ToUnload())
+// module Example2 =
+//
+//     open Ehingeeinae.Ecs.Systems
+//
+//     [<Struct>]
+//     type Position =
+//         { Position: Vector3 }
+//
+//     [<Struct>]
+//     type Player = struct end
+//
+//     [<Struct>]
+//     type Entity = struct end
+//
+//     [<Struct>]
+//     type ToUnload = struct end
+//
+//     type FooSystem(entityManager: IEcsWorldEntityManager, queryExecutor: EcsWorldQueryExecutor) =
+//         interface IEcsSystem with
+//             member this.Update(ctx) =
+//                 let criticalLength = 10.f
+//                 let players = EcsQuery.query<Position cread * Player cread> |> queryExecutor.ExecuteQuery
+//                 let entities = EcsQuery.query<EcsEntityId * Position cread * Entity cread> |> queryExecutor.ExecuteQuery
+//                 for eid, entityPosition, _ in entities do
+//                     let isEnoughFarForUnload =
+//                         players
+//                         |> Seq.map fst
+//                         |> Seq.exists ^fun playerPosition ->
+//                             Vector3.Distance(playerPosition.Value.Position, entityPosition.Value.Position) > criticalLength
+//                     if isEnoughFarForUnload then
+//                         entityManager.AddComponent(eid, ToUnload())
 
 [<Struct>]
 type Position =
@@ -69,26 +69,52 @@ type Velocity =
     { Velocity: Vector2 }
 
 [<Struct>]
+type Named = { Name: string }
+
+[<Struct>]
 type StaticBody = struct end
 
-[<Struct>]
-type DecimalX10 = { D0: decimal; D1: decimal; D2: decimal; D3: decimal; D4: decimal; D5: decimal; D6: decimal; D7: decimal; D8: decimal; D9: decimal }
+// ----
 
-[<Struct>]
-type LargeComponent =
-    { DX0: DecimalX10; DX1: DecimalX10; DX2: DecimalX10; DX3: DecimalX10 }
+type MovementSystem(query: IEcsQuery<{| Position: Position cwrite; Velocity: Velocity cread |}>, queryExecutor: EcsWorldQueryExecutor) =
+    interface IEcsSystem with
+        member this.Update(ctx) =
+            let comps = queryExecutor.ExecuteQuery(query)
+            for comp in comps do
+                let newPosition = { Position = comp.Position.Value.Position + comp.Velocity.Value.Velocity}
+                EcsWriteComponent.setValue comp.Position &newPosition
 
+type MovementSystem2(query: IEcsQuery<Position cwrite>, queryExecutor: EcsWorldQueryExecutor) =
+    interface IEcsSystem with
+        member this.Update(ctx) =
+            let comps = queryExecutor.ExecuteQuery(query)
+            for position in comps do
+                let newPosition = { Position = position.Value.Position - Vector2.UnitY }
+                EcsWriteComponent.setValue position &newPosition
 
-let test (logger: ILogger) (entityManager: IEcsWorldEntityManager) =
-    for i in 0 .. 999999 do
-        if i % 1000 = 0 then logger.LogInformation($"i: {i}")
-        entityManager.AddEntity(({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) }, Unchecked.defaultof<LargeComponent>)) |> ignore
-        (entityManager :?> EcsWorldEntityManager).Commit()
+type PrintingSystem(query: IEcsQuery<Position cread * Named cread>, queryExecutor: EcsWorldQueryExecutor) =
+    interface IEcsSystem with
+        member this.Update(ctx) =
+            printfn "PrintSystem.Update"
+            let comps = queryExecutor.ExecuteQuery(query)
+            for pos, named in comps do
+                let pos = pos.Value.Position
+                let name = named.Value.Name
+                printf $"{name}({pos.X}, {pos.Y}) "
+            printfn ""
 
-[<AutoOpen>]
-module Absorb =
-    let mutable private _void: obj = null
-    let absorb (x: 'a) = _void <- box x
+// ----
+
+let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
+    worldManager.AddEntities([
+        for i in 0 .. 2 do
+            let i = float32 i
+            ({ Position = Vector2( 2f * i,  2f) }, { Velocity = Vector2( 1f,  1f) }, { Name = $"A{i}" })
+            ({ Position = Vector2(-2f, -2f * i) }, { Velocity = Vector2(-1f, -1f) }, { Name = $"B{i}" })
+    ]) |> ignore
+    let eid = worldManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody())
+    // (worldEntityManager :> IEcsWorldEntityManager).RemoveEntity(eid)
+    ()
 
 let work (services: IServiceProvider) =
     let logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("work")
@@ -97,37 +123,28 @@ let work (services: IServiceProvider) =
     let worldEntityManager = EcsWorldEntityManager(world, services.GetRequiredService())
     let worldQueryExecutor = EcsWorldQueryExecutor(world)
 
+    // ----
+    // Systems
+
+    let systems =
+        FooSystemBuilder()
+            .AddSystem("Logic", fun q -> upcast MovementSystem(q.CreateQuery(), worldQueryExecutor))
+            .AddSystem("Logic", fun q -> upcast MovementSystem2(q.CreateQuery(), worldQueryExecutor))
+            .AddSystem("Render", fun q -> upcast PrintingSystem(q.CreateQuery(), worldQueryExecutor))
+            .Build()
+
+    let scheduler = EcsScheduler(systems)
+
+    // ----
+
     logger.LogInformation($"World init: %A{world}")
 
-    (worldEntityManager :> IEcsWorldEntityManager).AddEntities([
-        for i in 0 .. 30 do
-            let i = float32 i
-            ({ Position = Vector2( 2f * i,  2f) }, { Velocity = Vector2( 1f,  1f) })
-            ({ Position = Vector2(-2f, -2f * i) }, { Velocity = Vector2(-1f, -1f) })
-    ]) |> ignore
-    let eid = (worldEntityManager :> IEcsWorldEntityManager).AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody())
-    (worldEntityManager :> IEcsWorldEntityManager).RemoveEntity(eid)
-
+    seedWorld worldEntityManager
     worldEntityManager.Commit()
 
     logger.LogInformation($"World seeded: %A{world}")
 
-    let q = EcsQuery.query<Position cwrite * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
-
-    for i in 0 .. 99999 do
-        if i % 10 = 0 then logger.LogInformation($"i: {i}")
-        let comps = worldQueryExecutor.ExecuteQuery(q)
-        for position, velocity in comps do
-            let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-            EcsWriteComponent.setValue position &newPosition
-
-    // let q = EcsQuery.query<Position cread * Velocity cread> |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
-    // for i in 0 .. 99 do
-    //     if i % 10 = 0 then logger.LogInformation($"i: {i}")
-    //     let comps = worldQueryExecutor.ExecuteQuery(q)
-    //     for position, velocity in comps do
-    //         let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-    //         absorb newPosition
+    scheduler.Run([ "Logic"; "Render" ])
 
     logger.LogInformation($"World result: %A{world}")
 

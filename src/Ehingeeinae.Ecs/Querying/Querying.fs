@@ -4,6 +4,13 @@ open System
 
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
+open TypeShape.Core.Core
+
+
+// Based on Rust Amethyst Legion
+type IEcsQuery<'q> =
+    abstract Fetch: ArchetypeStorage -> 'q seq
+    abstract Filter: EcsArchetype -> bool
 
 
 [<Struct>]
@@ -68,47 +75,39 @@ module EcsComponentExtensions =
         comp.Value <- &x
         ()
 
+// --------
+// Component Shaping
 
-// Based on Rust Amethyst Legion
-type IEcsQuery<'q> =
-    abstract Fetch: ArchetypeStorage -> 'q seq
-    abstract Filter: EcsArchetype -> bool
+type IEcsComponentVisitor<'R> =
+    abstract Visit<'c> : unit -> 'R
 
+type IShapeEcsComponent =
+    abstract Component: TypeShape
+    abstract Accept<'R> : IEcsComponentVisitor<'R> -> 'R
 
-[<AutoOpen>]
-module private Utils =
+type ShapeEcsComponent<'c>() =
+    interface IShapeEcsComponent with
+        member _.Component = upcast shapeof<'c>
+        member this.Accept(v) = v.Visit<'c>()
 
-    open TypeShape.Core
+[<RequireQualifiedAccess>]
+module Shape =
 
-    type IEcsComponentVisitor<'R> =
-        abstract Visit<'c> : unit -> 'R
-
-    type IShapeEcsComponent =
-        abstract Component: TypeShape
-        abstract Accept<'R> : IEcsComponentVisitor<'R> -> 'R
-
-    type ShapeEcsComponent<'c>() =
-        interface IShapeEcsComponent with
-            member _.Component = upcast shapeof<'c>
-            member this.Accept(v) = v.Visit<'c>()
-
-    [<RequireQualifiedAccess>]
-    module Shape =
-        let (|EcsWriteComponent|EcsReadComponent|EcsEntityId|NotEcsComponent|) (shape: TypeShape) =
-            match shape.ShapeInfo with
-            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsReadComponent<_>> ->
-                let shapeEcsComponent =
-                    Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
-                    :?> IShapeEcsComponent
-                EcsReadComponent shapeEcsComponent
-            | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsWriteComponent<_>> ->
-                let shapeEcsComponent =
-                    Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
-                    :?> IShapeEcsComponent
-                EcsWriteComponent shapeEcsComponent
-            | _ when (match shape with :? TypeShape<EcsEntityId> -> true | _ -> false) ->
-                EcsEntityId
-            | _ -> NotEcsComponent
+    let (|EcsWriteComponent|EcsReadComponent|EcsEntityId|NotEcsComponent|) (shape: TypeShape) =
+        match shape.ShapeInfo with
+        | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsReadComponent<_>> ->
+            let shapeEcsComponent =
+                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
+                :?> IShapeEcsComponent
+            EcsReadComponent shapeEcsComponent
+        | TypeShapeInfo.Generic (td, ta) when td = typedefof<EcsWriteComponent<_>> ->
+            let shapeEcsComponent =
+                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(ta)
+                :?> IShapeEcsComponent
+            EcsWriteComponent shapeEcsComponent
+        | _ when (match shape with :? TypeShape<EcsEntityId> -> true | _ -> false) ->
+            EcsEntityId
+        | _ -> NotEcsComponent
 
 
 [<RequireQualifiedAccess>]
@@ -125,107 +124,180 @@ module Expr =
             | [parameter] -> Expr.Lambda(parameter, body)
         foo parameters
 
+    let letMany (vars: (Var * Expr) list) (body: Expr) : Expr =
+        let rec foo vars =
+            match vars with
+            | [] -> invalidOp ""
+            | [(var, value)] -> Expr.Let(var, value, body)
+            | (var, value) :: tail ->
+                Expr.Let(var, value, foo tail)
+        foo vars
 
-[<RequireQualifiedAccess>]
-module EcsQuery =
 
-    open System.Reflection
+module EcsQueryCreating =
 
     open FSharp.Quotations
     open FSharp.Quotations.Evaluator
     open Microsoft.FSharp.Reflection
-    open TypeShape.Core
 
-    type internal Marker = class end
 
-    let private getComponentRef (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : 'c byref =
-        let col = cols.[idxCol]
-        let col = col |> ComponentColumn.unbox<'c>
-        let arr = col.Components |> ResizeArray.getItems
-        &arr.Array.[idxEntity]
+    let itemAsReadComponent (arr: 'c[]) i = EcsReadComponent.cast &arr.[i]
+    let itemAsWriteComponent (arr: 'c[]) i = EcsWriteComponent.cast &arr.[i]
+
+    let mkQueryTupleOrRecord<'q> (shapeMembers: IShapeMember<'q>[]) createFromItems =
+
+        let itemCount = shapeMembers.Length
+
+        let compTypes =
+            shapeMembers
+            |> Array.collect ^fun shapeItem ->
+                match shapeItem.Member with
+                | Shape.EcsReadComponent shape -> shape.Accept({ new IEcsComponentVisitor<_> with member _.Visit<'c>() = [| typeof<'c> |] })
+                | Shape.EcsWriteComponent shape -> shape.Accept({ new IEcsComponentVisitor<_> with member _.Visit<'c>() = [| typeof<'c> |] })
+                | Shape.EcsEntityId -> [| |]
+                | _ -> failwithf $"Unsupported type {shapeItem.Member.Type}"
+
+        let (fetchExpr: Expr<ArchetypeStorage -> int -> 'q>) =
+            // Из-за того, что каждая ветка в этой лямбде возвращает разный (в зависимости от кортежа 'q) тип,
+            // чтобы обратно это можно было сконструировать, надо использовать quotations
+            let storageVar = Var("storage", typeof<ArchetypeStorage>)
+            Expr.lambdaMany [storageVar] (
+                let storage = Expr.Var(storageVar) |> Expr.Cast<ArchetypeStorage>
+                let itemFs = [
+                    for idxItem in 0 .. itemCount - 1 do
+                        let shapeItem = shapeMembers.[idxItem]
+                        let var = Var($"item{idxItem}", FSharpType.MakeFunctionType(typeof<int>, shapeItem.Member.Type))
+                        var,
+                        match shapeItem.Member with
+                        | Shape.EcsEntityId ->
+                            <@@
+                                let storage = %storage
+                                let eids = storage.Ids
+                                fun idxEntity ->
+                                    eids.[idxEntity]
+                            @@>
+                        | Shape.EcsReadComponent shape ->
+                            shape.Accept({ new IEcsComponentVisitor<_> with
+                                member _.Visit<'c>() =
+                                    <@@
+                                        let storage = %storage
+                                        let col = storage.GetColumn<'c>()
+                                        let arr = col.Components |> ResizeArray.getItems
+                                        fun idxEntity ->
+                                            itemAsReadComponent arr.Array idxEntity
+                                    @@>
+                            })
+                        | Shape.EcsWriteComponent shape ->
+                            shape.Accept({ new IEcsComponentVisitor<_> with
+                                member _.Visit<'c>() =
+                                    <@@
+                                        let storage = %storage
+                                        let col = storage.GetColumn<'c>()
+                                        let arr = col.Components |> ResizeArray.getItems
+                                        fun idxEntity ->
+                                            itemAsWriteComponent arr.Array idxEntity
+                                    @@>
+                            })
+                        | _ ->
+                            invalidOp $"Type (at {idxItem} position) is not supported as query element"
+                ]
+                Expr.letMany itemFs (
+                    let itemFVars = itemFs |> List.map fst
+                    let idxEntityVar = Var("idxEntity", typeof<int>)
+                    Expr.Lambda(
+                        idxEntityVar,
+                        let idxEntity = Expr.Var(idxEntityVar) |> Expr.Cast<int>
+                        let items = itemFVars |> List.map (fun itemFVar -> Expr.Application(Expr.Var(itemFVar), idxEntity))
+                        createFromItems items
+                    )
+                )
+            )
+            |> Expr.Cast
+
+        let fetch: ArchetypeStorage -> int -> 'q =
+            // downcast (fetchExpr |> FSharp.Linq.RuntimeHelpers.LeafExpressionConverter.EvaluateQuotation)
+            fetchExpr.Evaluate()
+
+        { new IEcsQuery<'q> with
+            member _.Filter(archetype) =
+                archetype.ComponentTypes.IsSupersetOf(compTypes)
+            member _.Fetch(storage) =
+                let entityCount = storage.Count
+                seq {
+                    let fetch = fetch storage
+                    for idxEntity in 0 .. entityCount - 1 do
+                        yield fetch idxEntity
+                }
+        }
+
+    let mkQuerySingleValue<'q> (compTypes: Type seq) (fetchExpr: Expr<ArchetypeStorage -> int -> 'q>) =
+        let fetch = fetchExpr.Evaluate()
+        { new IEcsQuery<'q> with
+            member _.Filter(archetype) = archetype.ComponentTypes.IsSupersetOf(compTypes)
+            member _.Fetch(storage) =
+                let entityCount = storage.Count
+                seq {
+                    let fetch = fetch storage
+                    for idxEntity in 0 .. entityCount - 1 do
+                        yield fetch idxEntity
+                }
+        }
 
     [<RequiresExplicitTypeArguments>]
-    let getReadComponent (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : EcsReadComponent<'c> =
-        let ca = &getComponentRef cols idxCol idxEntity
-        EcsReadComponent.cast &ca
-
-    [<RequiresExplicitTypeArguments>]
-    let getWriteComponent (cols: IComponentColumn[]) (idxCol: int) (idxEntity: int) : EcsWriteComponent<'c> =
-        let ca = &getComponentRef cols idxCol idxEntity
-        EcsWriteComponent.cast &ca
-
-    let getEid (eids: ArraySegment<EcsEntityId>) (idxEntity: int) : EcsEntityId =
-        eids.[idxEntity]
-
-    [<RequiresExplicitTypeArguments>]
-    let query<'q> : IEcsQuery<'q> =
+    let mkQuery<'q> () : IEcsQuery<'q> =
         let shape = shapeof<'q>
         match shape with
+        // Single Read Component
+        | Shape.EcsReadComponent shape ->
+            let compTypes, fetchExpr = shape.Accept({ new IEcsComponentVisitor<_> with
+                member _.Visit<'c>() =
+                    let compTypes = [ typeof<'c> ]
+                    let fetchExpr: Expr<_ -> _ -> EcsReadComponent<'c>> =
+                        <@ fun (storage: ArchetypeStorage) ->
+                            let col = storage.GetColumn<'c>()
+                            let arr = col.Components |> ResizeArray.getItems
+                            fun idxEntity ->
+                                itemAsReadComponent arr.Array idxEntity
+                        @>
+                    compTypes, (Expr.Cast fetchExpr)
+            })
+            mkQuerySingleValue compTypes fetchExpr
+        // Single Write Component
+        | Shape.EcsWriteComponent shape ->
+            let compTypes, fetchExpr = shape.Accept({ new IEcsComponentVisitor<_> with
+                member _.Visit<'c>() =
+                    let compTypes = [ typeof<'c> ]
+                    let fetchExpr: Expr<_ -> _ -> EcsWriteComponent<'c>> =
+                        <@ fun (storage: ArchetypeStorage) ->
+                            let col = storage.GetColumn<'c>()
+                            let arr = col.Components |> ResizeArray.getItems
+                            fun idxEntity ->
+                                itemAsWriteComponent arr.Array idxEntity
+                        @>
+                    compTypes, (Expr.Cast fetchExpr)
+            })
+            mkQuerySingleValue compTypes fetchExpr
+        // Single EntityId
+        | Shape.EcsEntityId ->
+            let compTypes = []
+            let fetchExpr: Expr<_ -> _ -> EcsEntityId> =
+                <@ fun (storage: ArchetypeStorage) ->
+                    let eids = storage.Ids
+                    fun idxEntity ->
+                        eids.[idxEntity]
+                @>
+            mkQuerySingleValue compTypes (Expr.Cast fetchExpr)
+        // Record
+        | Shape.FSharpRecord (:? ShapeFSharpRecord<'q> as shapeRecord) ->
+            mkQueryTupleOrRecord shapeRecord.Fields (fun items -> Expr.NewRecord(typeof<'q>, items))
+        // Tuple
         | Shape.Tuple (:? ShapeTuple<'q> as shapeTuple) ->
-            let cTypes = shapeTuple.Elements |> Array.map (fun e -> e.Member.Type.GetGenericArguments().[0])
-            let compTypes =
-                shapeTuple.Elements
-                |> Array.collect ^fun shapeItem ->
-                    match shapeItem.Member with
-                    | Shape.EcsReadComponent _ | Shape.EcsWriteComponent _ -> [| shapeItem.Member.Type |]
-                    | _ -> [| |]
-            let qcTypes = FSharpType.GetTupleElements(typeof<'q>)
-            let itemCount = shapeTuple.Elements.Length
-
-            let resolveQueryExpr: Expr<ArraySegment<EcsEntityId> -> IComponentColumn[] -> int -> 'q> =
-                // Из-за того, что каждая ветка в этой лямбде возвращает разный (в зависимости от кортежа 'q) тип,
-                // чтобы обратно это можно было сконструировать, надо использовать quotations
-                let eidsVar = Var("eids", typeof<ArraySegment<EcsEntityId>>)
-                let colsVar = Var("cols", typeof<IComponentColumn[]>)
-                let idxEntityVar = Var("idxEntity", typeof<int>)
-                Expr.lambdaMany [eidsVar; colsVar; idxEntityVar] (
-                    let eids = Expr.Var(eidsVar)
-                    let cols = Expr.Var(colsVar) |> Expr.Cast<IComponentColumn[]>
-                    let idxEntity = Expr.Var(idxEntityVar) |> Expr.Cast<int>
-                    let items = [
-                        for idxCol in 0 .. itemCount - 1 do
-                            let shapeItem = shapeTuple.Elements.[idxCol]
-                            match shapeItem.Member with
-                            | Shape.EcsEntityId ->
-                                <@@ getEid %%eids %idxEntity @@>
-                            | Shape.EcsReadComponent shape ->
-                                shape.Accept({ new IEcsComponentVisitor<_> with
-                                    member _.Visit<'c>() =
-                                        <@@ getReadComponent<'c> %cols idxCol %idxEntity @@>
-                                })
-                            | Shape.EcsWriteComponent shape ->
-                                shape.Accept({ new IEcsComponentVisitor<_> with
-                                    member _.Visit<'c>() =
-                                        <@@ getWriteComponent<'c> %cols idxCol %idxEntity @@>
-                                })
-                            | _ ->
-                                invalidOp $"Type {qcTypes.[idxCol]} (at {idxCol} position) is not supported as query element"
-                    ]
-                    if shapeTuple.IsStructTuple then
-                        let asm = Assembly.GetExecutingAssembly() // TODO: Which assembly should be used?
-                        Expr.NewStructTuple(asm, items)
-                    else
-                        Expr.NewTuple(items)
-                )
-                |> Expr.Cast
-
-            let getQ: ArraySegment<EcsEntityId> -> IComponentColumn[] -> int -> 'q =
-                // downcast (resolveQueryExpr |> FSharp.Linq.RuntimeHelpers.LeafExpressionConverter.EvaluateQuotation)
-                resolveQueryExpr.Evaluate()
-
-            // FIXME: EcsEntityId in 'q, related with cTypes and indices
-            { new IEcsQuery<'q> with
-                member _.Filter(archetype) =
-                    archetype.ComponentTypes.IsSupersetOf(compTypes)
-                member _.Fetch(storage) =
-                    let cols = cTypes |> Array.map storage.GetColumn
-                    let eids = storage.Ids |> ResizeArray.getItems
-                    let entityCount = storage.Count
-                    seq {
-                        for idxEntity in 0 .. entityCount - 1 do
-                            yield getQ eids cols idxEntity
-                    }
-            }
-        // Single value
+            mkQueryTupleOrRecord shapeTuple.Elements (fun items ->
+                if shapeTuple.IsStructTuple then
+                    Expr.NewStructTuple(typeof<ValueTuple<_>>.Assembly, items)
+                else
+                    Expr.NewTuple(items)
+            )
+        // Other types
         | _ ->
-            raise <| NotSupportedException($"Type '{typeof<'q>}' is not supported as EcsQuery representation")
+            raise ^ NotSupportedException($"Type {typeof<'q>} is not supported")
