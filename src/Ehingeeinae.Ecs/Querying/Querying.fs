@@ -140,9 +140,51 @@ module EcsQueryCreating =
     open FSharp.Quotations.Evaluator
     open Microsoft.FSharp.Reflection
 
+    type FetchF<'r> = ArchetypeStorage -> int -> 'r
 
     let itemAsReadComponent (arr: 'c[]) i = EcsReadComponent.cast &arr.[i]
     let itemAsWriteComponent (arr: 'c[]) i = EcsWriteComponent.cast &arr.[i]
+
+    // let foo (shape: TypeShape<'q>) (storageExpr: Expr<ArchetypeStorage>) : Type list * Expr =
+    //     match shape with
+    //     | Shape.EcsReadComponent shape ->
+    //         shape.Accept({ new IEcsComponentVisitor<_> with
+    //             member _.Visit<'c>() =
+    //                 let fetchExpr: Expr<int -> EcsReadComponent<'c>> =
+    //                     <@
+    //                         let storage = %storageExpr
+    //                         let col = storage.GetColumn<'c>()
+    //                         let arr = col.Components |> ResizeArray.getItems
+    //                         fun idxEntity ->
+    //                             itemAsReadComponent arr.Array idxEntity
+    //                     @>
+    //                 [typeof<'c>], upcast fetchExpr
+    //         })
+    //     | Shape.EcsWriteComponent shape ->
+    //         shape.Accept({ new IEcsComponentVisitor<_> with
+    //             member _.Visit<'c>() =
+    //                 let fetchExpr: Expr<int -> EcsWriteComponent<'c>> =
+    //                     <@
+    //                         let storage = %storageExpr
+    //                         let col = storage.GetColumn<'c>()
+    //                         let arr = col.Components |> ResizeArray.getItems
+    //                         fun idxEntity ->
+    //                             itemAsWriteComponent arr.Array idxEntity
+    //                     @>
+    //                 [typeof<'c>], upcast fetchExpr
+    //         })
+    //     // Single EntityId
+    //     | Shape.EcsEntityId ->
+    //         let fetchExpr: Expr<int -> EcsEntityId> =
+    //             <@
+    //                 let storage = %storageExpr
+    //                 let eids = storage.Ids
+    //                 fun idxEntity ->
+    //                     eids.[idxEntity]
+    //             @>
+    //         [], upcast fetchExpr
+    //     | _ ->
+    //         failwith ""
 
     let mkQueryTupleOrRecord<'q> (shapeMembers: IShapeMember<'q>[]) createFromItems =
 
@@ -213,6 +255,8 @@ module EcsQueryCreating =
                 )
             )
             |> Expr.Cast
+
+        printfn $"fetchExpr:\n%A{fetchExpr}"
 
         let fetch: ArchetypeStorage -> int -> 'q =
             // downcast (fetchExpr |> FSharp.Linq.RuntimeHelpers.LeafExpressionConverter.EvaluateQuotation)

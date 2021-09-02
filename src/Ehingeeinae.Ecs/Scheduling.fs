@@ -27,19 +27,30 @@ type SchedulerSystem =
 
 module SchedulerSystem =
 
+    let isColliding (s1: SchedulerSystem) (s2: SchedulerSystem) : bool =
+        ScheduledSystemComponent.isColliding s1.UsingComponents s2.UsingComponents
+
     let batched (systems: SchedulerSystem list) : SchedulerSystem list list =
-        let mutable currentBatch = []
-        let mutable allBatches = []
+        // let mutable currentBatch = []
+        // let mutable allBatches = []
+        let currentBatch = ResizeArray()
+        let allBatches = ResizeArray()
         for system in systems do
-            let isColliding = currentBatch |> Seq.exists ^fun currSys -> ScheduledSystemComponent.isColliding currSys.UsingComponents system.UsingComponents
+            let isColliding = currentBatch |> Seq.exists (isColliding system)
             if isColliding then
-                allBatches <- (List.rev currentBatch) :: allBatches
-                currentBatch <- [system]
+                // allBatches <- (List.rev currentBatch) :: allBatches
+                // currentBatch <- [system]
+                allBatches.Add(currentBatch |> Seq.toList)
+                currentBatch.Clear()
             else
-                currentBatch <- system :: currentBatch
-        if not currentBatch.IsEmpty then
-            allBatches <- (List.rev currentBatch) :: allBatches
-        allBatches |> List.rev
+                // currentBatch <- system :: currentBatch
+                currentBatch.Add(system)
+        // if not currentBatch.IsEmpty then
+        //     allBatches <- (List.rev currentBatch) :: allBatches
+        if currentBatch.Count > 0 then
+            allBatches.Add(currentBatch |> Seq.toList)
+        // allBatches |> List.rev
+        allBatches |> Seq.toList
 
 
 type SchedulerSystemGroup =
