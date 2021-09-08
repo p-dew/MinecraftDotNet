@@ -54,6 +54,13 @@ module EcsSystemFactory =
 
 type EcsSchedulerBuilder(services: IServiceCollection) =
 
+    let nextGroupId =
+        let mutable lastGroupId = 0uL
+        fun () ->
+            let gid = lastGroupId
+            lastGroupId <- lastGroupId + 1uL
+            gid
+
     let createSchedulerSystem (groupInfo: GroupInfo) (systemFactory: IEcsSystemFactory) (queryFactory: IEcsQueryFactory) : SchedulerSystem =
         let compTypes: ResizeArray<Type * bool> = ResizeArray()
         let mutable factoryExecuted = false
@@ -77,7 +84,7 @@ type EcsSchedulerBuilder(services: IServiceCollection) =
         schedulerSystem
 
     member this.CreateGroup(name, threading) =
-        let groupId = GroupId <| Guid.NewGuid()
+        let groupId = GroupId <| nextGroupId ()
         { Id = groupId; Name = name; Threading = threading }
 
     member this.AddSystem(groupInfo: GroupInfo, systemFactoryFactory: IServiceProvider -> IEcsSystemFactory): unit =

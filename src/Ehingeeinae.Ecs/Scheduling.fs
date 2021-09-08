@@ -19,7 +19,7 @@ module ScheduledSystemComponent =
             let anyIsMutable = c1.IsMutable || c2.IsMutable
             c1.Type = c2.Type && anyIsMutable
 
-type GroupId = GroupId of Guid
+type GroupId = GroupId of uint64
 
 [<RequireQualifiedAccess>]
 type Threading =
@@ -62,11 +62,24 @@ module SchedulerSystem =
 
 type SystemGroupUpdater(systems: SchedulerSystem seq) =
     let systems = systems |> Seq.toArray
+    let groupCount = systems |> Seq.groupBy (fun s -> s.GroupInfo.Id) |> Seq.length
 
-    // let groupSystemCache = Dictionary<HashSet<GroupId>, SchedulerSystem array array>(HashSet.CreateSetComparer())
+    let groupSystemCache = Dictionary<SortedSet<uint64>, SchedulerSystem array array>(SortedSet.CreateSetComparer())
     // let groupSystemCache = ResizeArray<GroupId seq * SchedulerSystem array array>()
 
     let getSystems (groupIds: GroupId seq) =
+        let gids = groupIds
+        let groupIds = groupIds |> Seq.map (fun (GroupId x) -> x)
+        let groupIds = SortedSet<_>(groupIds)
+
+        match groupSystemCache.TryGetValue(groupIds) with
+        | true, systems -> systems
+        | false, _ ->
+            let systemsFiltered = systems |> Seq.filter ^fun s -> Seq.contains s.GroupInfo.Id gids
+            let systemBatches = SchedulerSystem.batched systemsFiltered
+            groupSystemCache.Add((groupIds, systemBatches))
+            systemBatches
+
         // let r =
         //     groupSystemCache
         //     |> Seq.tryPick ^fun (gids, systems) ->
@@ -77,10 +90,6 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
         // match r with
         // | Some systemBatches -> systemBatches
         // | None ->
-            let systemsFiltered = systems |> Seq.filter ^fun s -> Seq.contains s.GroupInfo.Id groupIds
-            let systemBatches = SchedulerSystem.batched systemsFiltered
-            // groupSystemCache.Add((groupIds, systemBatches))
-            systemBatches
 
     member this.UpdateGroups(groupIds: GroupId seq) =
         let systemBatches = getSystems groupIds
