@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ehingeeinae", "Ehingeeinae"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ehingeeinae.AssetManagement", "src\Ehingeeinae.AssetManagement\Ehingeeinae.AssetManagement.fsproj", "{5A80C158-FB87-4FB9-95BC-C29DEB0B6DDE}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ehingeeinae.Utils", "src\Ehingeeinae.Utils\Ehingeeinae.Utils.fsproj", "{EC9B68DB-7A2B-466B-A424-1C878A739EF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -64,6 +66,10 @@ Global
 		{5A80C158-FB87-4FB9-95BC-C29DEB0B6DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A80C158-FB87-4FB9-95BC-C29DEB0B6DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A80C158-FB87-4FB9-95BC-C29DEB0B6DDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC9B68DB-7A2B-466B-A424-1C878A739EF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC9B68DB-7A2B-466B-A424-1C878A739EF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC9B68DB-7A2B-466B-A424-1C878A739EF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC9B68DB-7A2B-466B-A424-1C878A739EF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BEDE8AE7-E6EC-4A2A-906F-AE57D4271093} = {A96BB43A-994B-4B4A-B726-FC1BB71A4D92}
@@ -72,5 +78,6 @@ Global
 		{9FC2545A-6D94-4841-8611-8F2D088E28AB} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
 		{A49BD791-0F91-44C5-AEEF-458FEB19E24B} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
 		{5A80C158-FB87-4FB9-95BC-C29DEB0B6DDE} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
+		{EC9B68DB-7A2B-466B-A424-1C878A739EF9} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
 	EndGlobalSection
 EndGlobal
