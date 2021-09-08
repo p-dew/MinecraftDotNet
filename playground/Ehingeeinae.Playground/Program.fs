@@ -176,10 +176,12 @@ let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
 //     )
 
 let configureEcs (ecs: EcsSchedulerBuilder) : unit =
-    let group1 = ecs.CreateGroup("group1", Threading.ThreadPool)
-    ecs.AddSystem<MovementSystemFactory>(group1)
-    ecs.AddSystem(group1, printingSystemFactory)
-    ecs.AddTiming(group1, 1_000.f)
+    let renderGroup = ecs.CreateGroup("render", Threading.ThreadPool)
+    let logicGroup = ecs.CreateGroup("logic", Threading.ThreadPool)
+    ecs.AddSystem<MovementSystemFactory>(logicGroup)
+    ecs.AddSystem(renderGroup, printingSystemFactory)
+    ecs.AddTiming(renderGroup, 500.f)
+    ecs.AddTiming(logicGroup, 1_000.f)
     ecs.AddSeeder(seedWorld)
 
 

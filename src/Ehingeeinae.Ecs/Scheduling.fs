@@ -44,8 +44,8 @@ module SchedulerSystem =
             ScheduledSystemComponent.isColliding cs1 cs2
         | _ -> true
 
-    let batched (systems: SchedulerSystem seq) : SchedulerSystem array seq =
-        seq {
+    let batched (systems: SchedulerSystem seq) : SchedulerSystem array array =
+        [|
             let currentBatch = ResizeArray()
             for system in systems do
                 let isColliding = currentBatch |> Seq.exists (isColliding system)
@@ -57,20 +57,29 @@ module SchedulerSystem =
                     currentBatch.Add(system)
             if currentBatch.Count > 0 then
                 yield currentBatch.ToArray() // make a copy
-        }
+        |]
 
 
 type SystemGroupUpdater(systems: SchedulerSystem seq) =
-    let groupSystemCache = Dictionary<HashSet<GroupId>, SchedulerSystem array seq>(HashSet.CreateSetComparer())
+    let systems = systems |> Seq.toArray
+
+    // let groupSystemCache = Dictionary<HashSet<GroupId>, SchedulerSystem array array>(HashSet.CreateSetComparer())
+    // let groupSystemCache = ResizeArray<GroupId seq * SchedulerSystem array array>()
 
     let getSystems (groupIds: GroupId seq) =
-        let groupIds = HashSet(groupIds)
-        match groupSystemCache.TryGetValue(groupIds) with
-        | true, systemBatches -> systemBatches
-        | false, _ ->
+        // let r =
+        //     groupSystemCache
+        //     |> Seq.tryPick ^fun (gids, systems) ->
+        //         let isSame = (Seq.compareWith Operators.compare groupIds gids) = 0
+        //         if isSame
+        //         then Some systems
+        //         else None
+        // match r with
+        // | Some systemBatches -> systemBatches
+        // | None ->
             let systemsFiltered = systems |> Seq.filter ^fun s -> Seq.contains s.GroupInfo.Id groupIds
             let systemBatches = SchedulerSystem.batched systemsFiltered
-            groupSystemCache.[groupIds] <- systemBatches
+            // groupSystemCache.Add((groupIds, systemBatches))
             systemBatches
 
     member this.UpdateGroups(groupIds: GroupId seq) =
@@ -82,7 +91,7 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
                 match system.GroupInfo.Threading with
                 | Threading.Thread runner ->
                     runner ^fun () ->
-                        let ctx = Unchecked.defaultof<_>
+                        let ctx = { Empty = () }
                         system.System.Update(ctx)
                         let completed' = Interlocked.Increment(&completed)
                         if completed' = systemBatch.Length then waitHandle.Set() |> ignore
@@ -129,5 +138,6 @@ type TimedScheduler(updater: SystemGroupUpdater, intervals: IntervalGroup seq) =
                 if interval.LastUpdateMs + interval.IntervalMs < elapsedMs then
                     shouldUpdate.Add(interval.GroupId)
                     interval.LastUpdateMs <- interval.LastUpdateMs + interval.IntervalMs
-            updater.UpdateGroups(shouldUpdate)
-            shouldUpdate.Clear()
+            if shouldUpdate.Count > 0 then
+                updater.UpdateGroups(shouldUpdate)
+                shouldUpdate.Clear()
