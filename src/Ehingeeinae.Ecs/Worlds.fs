@@ -241,6 +241,9 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
         lazyActions |> Seq.iter (fun f -> f ())
         lazyActions.Clear()
 
+    member this.Clear() =
+        world.Archetypes.Clear()
+
     interface IEcsWorldEntityManager with
 
         member this.AddEntities(css: #IReadOnlyList<'cs>) =

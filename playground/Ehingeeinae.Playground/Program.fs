@@ -1,6 +1,8 @@
 module Ehingeeinae.Playground.Program
 
+open System.Diagnostics
 open System.Threading
+open Ehingeeinae.Ecs.Hosting
 open Ehingeeinae.Ecs.Scheduling
 open Ehingeeinae.Ecs.Systems
 
@@ -76,32 +78,49 @@ type StaticBody = struct end
 
 // ----
 
-type MovementSystem(query: IEcsQuery<{| Position: Position cwrite; Velocity: Velocity cread |}>, queryExecutor: EcsWorldQueryExecutor) =
-    interface IEcsSystem with
-        member this.Update(ctx) =
-            let comps = queryExecutor.ExecuteQuery(query)
-            for comp in comps do
-                let newPosition = { Position = comp.Position.Value.Position + comp.Velocity.Value.Velocity}
-                EcsWriteComponent.setValue comp.Position &newPosition
+type MovementSystemFactory(queryExecutor: EcsWorldQueryExecutor) =
+    interface IEcsSystemFactory with
+        member _.CreateSystem(queryFactory) =
+            let query = queryFactory.CreateQuery<{| Position: Position cwrite; Velocity: Velocity cread |}>()
+            EcsSystem.create ^fun ctx ->
+                let comps = queryExecutor.ExecuteQuery(query)
+                for comp in comps do
+                    comp.Position.Value <- { Position = comp.Position.Value.Position + comp.Velocity.Value.Velocity}
 
-type MovementSystem2(query: IEcsQuery<Position cwrite>, queryExecutor: EcsWorldQueryExecutor) =
-    interface IEcsSystem with
-        member this.Update(ctx) =
-            let comps = queryExecutor.ExecuteQuery(query)
-            for position in comps do
-                let newPosition = { Position = position.Value.Position - Vector2.UnitY }
-                EcsWriteComponent.setValue position &newPosition
+// type MovementSystem2(query: IEcsQuery<Position cwrite>, queryExecutor: EcsWorldQueryExecutor) =
+//     interface IEcsSystem with
+//         member this.Update(ctx) =
+//             let comps = queryExecutor.ExecuteQuery(query)
+//             for position in comps do
+//                 position.Value <- { Position = position.Value.Position - Vector2.UnitY }
+//
+// type PrintingSystem(query: IEcsQuery<Position cread * Named cread>, queryExecutor: EcsWorldQueryExecutor) =
+//     interface IEcsSystem with
+//         member this.Update(ctx) =
+//             printfn "PrintSystem.Update"
+//             let comps = queryExecutor.ExecuteQuery(query)
+//             for pos, named in comps do
+//                 let pos = pos.Value.Position
+//                 let name = named.Value.Name
+//                 printf $"{name}({pos.X}, {pos.Y}) "
+//             printfn ""
 
-type PrintingSystem(query: IEcsQuery<Position cread * Named cread>, queryExecutor: EcsWorldQueryExecutor) =
-    interface IEcsSystem with
-        member this.Update(ctx) =
-            printfn "PrintSystem.Update"
+let printingSystemFactory (services: IServiceProvider) =
+    EcsSystemFactory.create ^fun queryFactory ->
+        let query = queryFactory.CreateQuery<Position cread * Named cread>()
+        let queryExecutor = services.GetRequiredService<EcsWorldQueryExecutor>()
+        let stopwatch = Stopwatch()
+        stopwatch.Start()
+        EcsSystem.create ^fun ctx ->
+            printfn $"PrintSystem.Update; Last update: {stopwatch.Elapsed}"
+            stopwatch.Restart()
             let comps = queryExecutor.ExecuteQuery(query)
             for pos, named in comps do
                 let pos = pos.Value.Position
                 let name = named.Value.Name
                 printf $"{name}({pos.X}, {pos.Y}) "
             printfn ""
+
 
 // ----
 
@@ -116,60 +135,75 @@ let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
     // (worldEntityManager :> IEcsWorldEntityManager).RemoveEntity(eid)
     ()
 
-let work (services: IServiceProvider) =
-    let logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("work")
+// let work (services: IServiceProvider) =
+//     let logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("work")
+//
+//     let world = EcsWorld.createEmpty ()
+//     let worldEntityManager = EcsWorldEntityManager(world, services.GetRequiredService())
+//     let worldQueryExecutor = EcsWorldQueryExecutor(world)
+//
+//     // ----
+//     // Systems
+//
+//     let systems =
+//         SystemGroupBuilder()
+//             .AddSystem("Logic", fun q -> upcast MovementSystem(q.CreateQuery(), worldQueryExecutor))
+//             .AddSystem("Logic", fun q -> upcast MovementSystem2(q.CreateQuery(), worldQueryExecutor))
+//             .AddSystem("Render", fun q -> upcast PrintingSystem(q.CreateQuery(), worldQueryExecutor))
+//             .Build()
+//
+//     let scheduler = SystemGroupUpdater(systems)
+//
+//     // ----
+//
+//     logger.LogInformation($"World init: %A{world}")
+//
+//     seedWorld worldEntityManager
+//     worldEntityManager.Commit()
+//
+//     logger.LogInformation($"World seeded: %A{world}")
+//
+//     scheduler.UpdateGroups([ "Logic"; "Render" ])
+//
+//     logger.LogInformation($"World result: %A{world}")
+//
+//     ()
 
-    let world = EcsWorld.createEmpty ()
-    let worldEntityManager = EcsWorldEntityManager(world, services.GetRequiredService())
-    let worldQueryExecutor = EcsWorldQueryExecutor(world)
+// let g1s1 (services: IServiceProvider) =
+//     EcsSystemFactory.create (fun queryFactory ->
+//         let q = queryFactory.CreateQuery()
+//         ()
+//     )
 
-    // ----
-    // Systems
-
-    let systems =
-        FooSystemBuilder()
-            .AddSystem("Logic", fun q -> upcast MovementSystem(q.CreateQuery(), worldQueryExecutor))
-            .AddSystem("Logic", fun q -> upcast MovementSystem2(q.CreateQuery(), worldQueryExecutor))
-            .AddSystem("Render", fun q -> upcast PrintingSystem(q.CreateQuery(), worldQueryExecutor))
-            .Build()
-
-    let scheduler = EcsScheduler(systems)
-
-    // ----
-
-    logger.LogInformation($"World init: %A{world}")
-
-    seedWorld worldEntityManager
-    worldEntityManager.Commit()
-
-    logger.LogInformation($"World seeded: %A{world}")
-
-    scheduler.Run([ "Logic"; "Render" ])
-
-    logger.LogInformation($"World result: %A{world}")
-
-    ()
+let configureEcs (ecs: EcsSchedulerBuilder) : unit =
+    let group1 = ecs.CreateGroup("group1", Threading.ThreadPool)
+    ecs.AddSystem<MovementSystemFactory>(group1)
+    ecs.AddSystem(group1, printingSystemFactory)
+    ecs.AddTiming(group1, 1_000.f)
+    ecs.AddSeeder(seedWorld)
 
 
 let configureServices (services: IServiceCollection) : unit =
-    services.AddLogging(fun logging -> logging.AddConsole() |> ignore) |> ignore
     ()
 
 // ----
 
-type Worker(services, lifetime, loggerFactory: ILoggerFactory) =
-    inherit SingleWorkHostedService(async { do work services }, lifetime, loggerFactory.CreateLogger<_>())
-
 let createHostBuilder args =
     Host.CreateDefaultBuilder(args)
+        .ConfigureLogging(fun logging ->
+            logging.AddConsole() |> ignore
+        )
         .ConfigureServices(fun services ->
-            services.AddHostedService<Worker>() |> ignore
-            ()
+            services.AddEcs(configureEcs) |> ignore
         )
         .ConfigureServices(configureServices)
+        .ConfigureServices(fun services -> services.AddSingleton(services) |> ignore)
 
 [<EntryPoint>]
 let main args =
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
-    (createHostBuilder args).Build().Run()
+    let host = (createHostBuilder args).Build()
+    // let services = host.Services.GetRequiredService<IServiceCollection>() |> Seq.toArray
+    // printfn $">>> services:\n%A{services}\n<<<"
+    host.Run()
     0
