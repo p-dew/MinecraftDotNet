@@ -1,86 +1,88 @@
 namespace Ehingeeinae.Collections
 
-open System.Collections.Generic
 open System.Runtime.CompilerServices
 
 //////////////
 // Enumerating
 
-// ~ Next: unit -> Option<'a byref>
-type IByrefEnumerator<'a> =
+type IByRefEnumerator<'T> =
     abstract Next: unit -> bool
-    abstract Current: 'a byref
+    abstract Current: 'T byref
 
-type IByrefEnumerable<'a, 'impl> when 'impl :> IByrefEnumerator<'a> =
-    abstract GetByrefEnumerator: unit -> 'impl
+type IByRefEnumerable<'T, 'TImpl> when 'TImpl :> IByRefEnumerator<'T> =
+    abstract GetByRefEnumerator: unit -> 'TImpl
 
-type IDynamicByrefEnumerable<'a> = IByrefEnumerable<'a, IByrefEnumerator<'a>>
+type IDynamicByRefEnumerable<'T> = IByRefEnumerable<'T, IByRefEnumerator<'T>>
 
 [<Extension>]
-type IByrefEnumerableExtensions =
+type ByRefEnumerableExtensions =
     [<Extension>]
-    static member ToDyn<'a, 'impl when 'impl :> IByrefEnumerator<'a> and 'impl : struct>(x: IByrefEnumerable<'a, 'impl>) =
-        { new IDynamicByrefEnumerable<'a> with
-            member _.GetByrefEnumerator() =
-                x.GetByrefEnumerator() :> IByrefEnumerator<'a> }
+    static member ToDyn<'a, 'impl when 'impl :> IByRefEnumerator<'a> and 'impl : struct>(x: IByRefEnumerable<'a, 'impl>) =
+        { new IDynamicByRefEnumerable<'a> with
+            member _.GetByRefEnumerator() =
+                upcast x.GetByRefEnumerator() }
 
 
-module ByrefEnumerator =
-    let inline moveNext (enumerator: #IByrefEnumerator<'a> byref) =
+module ByRefEnumerator =
+    let inline moveNext (enumerator: #IByRefEnumerator<'a> byref) =
         let mutable e = &enumerator
         e.Next()
 
-    let inline current (enumerator: #IByrefEnumerator<'a> byref) =
+    let inline current (enumerator: #IByRefEnumerator<'a> byref) =
         let mutable e = &enumerator
         &e.Current
 
-    let rec private containsLoop (item: 'a) (enumerator: #IByrefEnumerator<'a> byref) =
+    let rec private containsLoop (item: 'a) (enumerator: #IByRefEnumerator<'a> byref) =
         let mutable e = &enumerator
         if moveNext &e then
             let c = current &e
-            if c = item then true
+            if c = item
+            then true
             else containsLoop item &enumerator
-        else false
+        else
+            false
 
-    let inline contains (item: 'a) (enumerator: #IByrefEnumerator<'a> byref) =
+    let inline contains (item: 'a) (enumerator: #IByRefEnumerator<'a> byref) =
         let mutable e = &enumerator
         containsLoop item &e
 
     [<Struct>]
-    type ArrayByrefEnumerator<'a> =
+    type ArrayByRefEnumerator<'a> =
         val mutable array: 'a array
-        val mutable current: int
-        new(array: 'a array) = { current = -1; array = array }
-        interface IByrefEnumerator<'a> with
+        val mutable idxCurrent: int
+        new(array: 'a array) = { idxCurrent = -1; array = array }
+        interface IByRefEnumerator<'a> with
+            [<IsReadOnly>]
             member this.Current =
-                &this.array.[this.current]
+                &this.array.[this.idxCurrent]
             member this.Next() =
-                if this.current + 1 >= this.array.Length then false
-                else this.current <- (this.current + 1); true
+                if this.idxCurrent + 1 >= this.array.Length then
+                    false
+                else
+                    this.idxCurrent <- (this.idxCurrent + 1)
+                    true
 
 
-
-
-module ByrefEnumerable =
-    let toDerefferedSeq (source: #IByrefEnumerable<'a, _>): 'a seq =
-        let mutable enumerator = source.GetByrefEnumerator()
+module ByRefEnumerable =
+    let toDereferencedSeq (source: IByRefEnumerable<'a, _>): 'a seq =
+        let mutable enumerator = source.GetByRefEnumerator()
         seq {
             while enumerator.Next() do
                 let value: 'a = enumerator.Current
                 yield value
         }
 
-    let inline getByrefEnumerator (enumerable: IByrefEnumerable<_, _>) =
-        enumerable.GetByrefEnumerator()
+    let inline getByRefEnumerator (enumerable: IByRefEnumerable<_, _>) =
+        enumerable.GetByRefEnumerator()
 
     let ofArray (arr: 'a array) =
-        { new IByrefEnumerable<'a, ByrefEnumerator.ArrayByrefEnumerator<'a>> with
-            member _.GetByrefEnumerator() = ByrefEnumerator.ArrayByrefEnumerator<'a>(arr) }
+        { new IByRefEnumerable<'a, ByRefEnumerator.ArrayByRefEnumerator<'a>> with
+            member _.GetByRefEnumerator() = ByRefEnumerator.ArrayByRefEnumerator<'a>(arr) }
 
 
 // Enumerating
 //////////////
-/// ChunkList
+// ChunkList
 
 (*
 
@@ -114,26 +116,27 @@ module ChunkListConstants =
     let DefaultInitialCapacity = 4
 
 module private Internal =
-    let inline initChunks (cap: int) (limit: int) (realloc: bool) : List<ChunkListChunk<'a>> =
-        let tailLen = cap % limit
+    let inline initChunks (capacity: int) (limit: int) (doRealloc: bool) : ResizeArray<ChunkListChunk<'a>> =
+        let tailLen = capacity % limit
         let hasTail = tailLen <> 0
-        let chunkCount = if hasTail then cap / limit + 1 else cap / limit
-        let mutable chunks = List(chunkCount)
-        if realloc && hasTail then
-            failwith "TODO"
+        let chunkCount = if hasTail then capacity / limit + 1 else capacity / limit
+        let mutable chunks = ResizeArray(chunkCount)
+        if doRealloc && hasTail then
+            failwith "TODO" // TODO: Обработка неполных чанков
             for _ in 0 .. chunkCount - 2 do chunks.Add(Array.zeroCreate limit |> ChunkListChunk)
             chunks.Add(Array.zeroCreate tailLen |> ChunkListChunk)
         else
             for _ in 0 .. chunkCount - 1 do chunks.Add(Array.zeroCreate limit |> ChunkListChunk)
         chunks
 
+
 type ChunkList<'a> =
-    /// Чанки
-    val mutable internal chunks: List<ChunkListChunk<'a>>
+    /// Chunks
+    val mutable internal chunks: ResizeArray<ChunkListChunk<'a>>
     val mutable internal count: int
-    /// Максимальный размер чанка
-    val mutable internal chunkCapacity: int // TODO: rename
-    /// Когда true, не заполненные чанки будут реаллоцироваться по мере заполнения как ArrayList до достижения лимита
+    /// Max chunk size
+    val mutable internal chunkCapacity: int
+    /// When true then non filled chunks will be reallocated during a filling, as ResizeArray does it
     val internal realloc: bool
 
     // Реаллоцирование пока не реализовано и не факт что будет
@@ -155,7 +158,7 @@ type ChunkList<'a> =
             let chunk = this.chunks.[chunkIdx]
             &chunk.[elementIdx]
 
-    member inline this.Item
+    member this.Item
         with get(idx: int) =
             if idx < 0 || idx >= this.count then
                 failwith "Out of ChunkList index"
@@ -169,47 +172,47 @@ type ChunkList<'a> =
 
     member private this.ReserveOne() =
         let add () = this.chunks.Add(ChunkListChunk(this.chunkCapacity))
-        if this.chunks.Count = 0 then add ()
+        if this.chunks.Count = 0 then
+            add ()
         else
             let tail = this.count % this.chunkCapacity
-            if tail = 0 && this.count > 0 then add ()
-            else do ()
+            if tail = 0 && this.count > 0 then
+                add ()
 
-    member this.Clear() =
-        let mutable e = ByrefEnumerable.getByrefEnumerator this
-        while ByrefEnumerator.moveNext &e do
-            let mutable c = &(ByrefEnumerator.current &e)
+    member this.Clear(): unit =
+        let mutable e = ByRefEnumerable.getByRefEnumerator this
+        while ByRefEnumerator.moveNext &e do
+            let mutable c = &(ByRefEnumerator.current &e)
             c <- Unchecked.defaultof<_>
-        this.count = 0
+        this.count <- 0
 
     member this.Add(item) =
         this.ReserveOne()
-        this.ItemUnchecked this.count <- item
+        this.ItemUnchecked(this.count) <- item
         this.count <- this.count + 1
 
     member this.RemoveLast() =
         if this.count > 0 then
             let newCount = this.count - 1
             this.count <- newCount
-            this.ItemUnchecked newCount <- Unchecked.defaultof<_>
+            this.ItemUnchecked(newCount) <- Unchecked.defaultof<_>
 
-    interface IByrefEnumerable<'a, ChunkListByrefEnumerator<'a>> with
-        member this.GetByrefEnumerator() = ChunkListByrefEnumerator(this)
+    interface IByRefEnumerable<'a, ChunkListByRefEnumerator<'a>> with
+        member this.GetByRefEnumerator() = ChunkListByRefEnumerator(this)
 
 
-
-and [<Struct>] ChunkListByrefEnumerator<'a> =
-    val mutable list: ChunkList<'a>
-    val mutable current: int
+and [<Struct>] ChunkListByRefEnumerator<'a> =
+    val mutable private list: ChunkList<'a>
+    val mutable private current: int
 
     new(list: ChunkList<'a>) =
         { list = list; current = -1 }
 
-    interface IByrefEnumerator<'a> with
+    interface IByRefEnumerator<'a> with
         member this.Current = &this.list.ItemUnchecked(this.current)
         member this.Next() =
-            if this.current + 1 >= this.list.Count then false
-            else this.current <- (this.current + 1); true
-
-
-
+            if this.current + 1 >= this.list.Count then
+                false
+            else
+                this.current <- (this.current + 1)
+                true
