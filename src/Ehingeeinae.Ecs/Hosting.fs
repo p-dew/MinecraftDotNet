@@ -10,6 +10,7 @@ open Ehingeeinae.Ecs.Worlds
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open FSharp.Control.Tasks
+open Microsoft.Extensions.Logging
 open TypeShape.Core
 
 // type _Void<'T> =
@@ -19,16 +20,20 @@ open TypeShape.Core
 type IEcsWorldSeeder =
     abstract Seed: entityManager: IEcsWorldEntityManager -> unit
 
-type EcsHostedService(runner: TimedScheduler, seeder: IEcsWorldSeeder, worldEntityManager: IEcsWorldEntityManager) =
+type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler, seeder: IEcsWorldSeeder, worldEntityManager: IEcsWorldEntityManager) =
     let mutable schedulerCts: CancellationTokenSource = null
     let mutable runningTask = null
 
-    let runAsync () =
-        Task.Run(fun () ->
-            seeder.Seed(worldEntityManager)
-            (worldEntityManager :?> EcsWorldEntityManager).Commit() // FIXME: Remove downcast ugly hack
-            runner.Run(schedulerCts.Token)
-        )
+    let runAsync () = unitTask {
+        try
+            do! Task.Run(fun () ->
+                seeder.Seed(worldEntityManager)
+                (worldEntityManager :?> EcsWorldEntityManager).Commit() // FIXME: Remove downcast ugly hack
+                runner.Run(schedulerCts.Token)
+            )
+        with e ->
+            logger.LogError(e, "Error while running scheduler")
+    }
 
     interface IHostedService with
         member this.StartAsync(cancellationToken) =

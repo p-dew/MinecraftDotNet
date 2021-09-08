@@ -188,14 +188,15 @@ module QueryArgument =
 
 module EcsQueryCreating =
 
+    open Ehingeeinae.Collections
     open FSharp.Quotations
     open FSharp.Quotations.Evaluator
     open Microsoft.FSharp.Reflection
 
     type FetchF<'r> = ArchetypeStorage -> int -> 'r
 
-    let itemAsReadComponent (arr: 'c[]) i = EcsReadComponent.cast &arr.[i]
-    let itemAsWriteComponent (arr: 'c[]) i = EcsWriteComponent.cast &arr.[i]
+    let itemAsReadComponent (chunks: ChunkList<'c>) i = EcsReadComponent.cast &chunks.[i]
+    let itemAsWriteComponent (chunks: ChunkList<'c>) i = EcsWriteComponent.cast &chunks.[i]
 
     let mkQueryTupleOrRecord<'q> (shapeMembers: IShapeMember<'q>[]) createFromItems =
 
@@ -284,9 +285,9 @@ module EcsQueryCreating =
                                 <@@
                                     fun (storage: ArchetypeStorage) ->
                                         let col = storage.GetColumn<'c>()
-                                        let arr = col.Components |> ResizeArray.getItems
+                                        let chunks = col.Components
                                         fun idxEntity ->
-                                            itemAsReadComponent arr.Array idxEntity
+                                            itemAsReadComponent chunks idxEntity
                                 @@>
                         })
                     | Shape.EcsWriteComponent shape ->
@@ -295,9 +296,9 @@ module EcsQueryCreating =
                                 <@@
                                     fun (storage: ArchetypeStorage) ->
                                         let col = storage.GetColumn<'c>()
-                                        let arr = col.Components |> ResizeArray.getItems
+                                        let chunks = col.Components
                                         fun idxEntity ->
-                                            itemAsWriteComponent arr.Array idxEntity
+                                            itemAsWriteComponent chunks idxEntity
                                 @@>
                         })
                     | _ ->
@@ -405,9 +406,9 @@ module EcsQueryCreating =
                     let fetchExpr: Expr<_ -> _ -> EcsReadComponent<'c>> =
                         <@ fun (storage: ArchetypeStorage) ->
                             let col = storage.GetColumn<'c>()
-                            let arr = col.Components |> ResizeArray.getItems
+                            let chunks = col.Components
                             fun idxEntity ->
-                                itemAsReadComponent arr.Array idxEntity
+                                itemAsReadComponent chunks idxEntity
                         @>
                     compTypes, (Expr.Cast fetchExpr)
             })
@@ -420,9 +421,9 @@ module EcsQueryCreating =
                     let fetchExpr: Expr<_ -> _ -> EcsWriteComponent<'c>> =
                         <@ fun (storage: ArchetypeStorage) ->
                             let col = storage.GetColumn<'c>()
-                            let arr = col.Components |> ResizeArray.getItems
+                            let chunks = col.Components
                             fun idxEntity ->
-                                itemAsWriteComponent arr.Array idxEntity
+                                itemAsWriteComponent chunks idxEntity
                         @>
                     compTypes, (Expr.Cast fetchExpr)
             })

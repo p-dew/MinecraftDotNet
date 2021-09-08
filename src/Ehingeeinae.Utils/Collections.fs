@@ -42,7 +42,7 @@ module ByRefEnumerator =
         else
             false
 
-    let inline contains (item: 'a) (enumerator: #IByRefEnumerator<'a> byref) =
+    let contains (item: 'a) (enumerator: #IByRefEnumerator<'a> byref) =
         let mutable e = &enumerator
         containsLoop item &e
 
@@ -104,8 +104,8 @@ while i < length {
 [<Struct>]
 type ChunkListChunk<'a>(array: 'a array) =
     new(len: int) = ChunkListChunk(Array.zeroCreate len)
-    member inline _.Array = array
-    member inline _.Item with get(idx: int) = &array.[idx]
+    member _.Array = array
+    member _.Item with get(idx: int) = &array.[idx]
 
 
 [<AutoOpen>]

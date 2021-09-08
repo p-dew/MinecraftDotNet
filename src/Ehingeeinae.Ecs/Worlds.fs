@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 
 open System.Text
+open Ehingeeinae.Collections
 open Microsoft.Extensions.Logging
 
 open TypeShape.Core
@@ -33,10 +34,11 @@ type IComponentColumn =
     abstract ComponentsBoxed: obj
     abstract Accept: IComponentColumnVisitor<'R> -> 'R
 
-and ComponentColumn<'c>(rarr: ResizeArray<'c>) =
-    member this.Components = rarr
+and ComponentColumn<'c>() =
+    let chunks = ChunkList<'c>()
+    member this.Components = chunks
     interface IComponentColumn with
-        member this.ComponentsBoxed = box rarr
+        member this.ComponentsBoxed = box chunks
         member this.Accept(visitor: IComponentColumnVisitor<'R>) = visitor.Visit(this)
 
 and IComponentColumnVisitor<'R> =
@@ -58,9 +60,7 @@ module ComponentColumn =
     let createOfTypes (compTypes: Type seq) : IComponentColumn[] =
         [| for compType in compTypes ->
             let t = typedefof<ComponentColumn<_>>.MakeGenericType(compType)
-            let rarrType = typedefof<ResizeArray<_>>.MakeGenericType(compType)
-            let rarr = Activator.CreateInstance(rarrType)
-            Activator.CreateInstance(t, rarr) :?> IComponentColumn |]
+            Activator.CreateInstance(t) :?> IComponentColumn |]
 
 type IEcsEntityView =
     abstract Archetype: EcsArchetype
@@ -261,27 +261,28 @@ type EcsWorldEntityManager(world: EcsWorld, logger: ILogger<EcsWorldEntityManage
         member this.RemoveComponent(eid, cs) = failwith "todo"
 
         member this.RemoveEntity(eid) =
-            let action () =
-                let r =
-                    world.Archetypes
-                    |> Seq.tryPick ^fun (KeyValue (_, storage)) ->
-                        let idx = storage.Ids.IndexOf(eid)
-                        if idx = -1
-                        then None
-                        else Some (idx, storage)
-                match r with
-                | None -> raise ^ KeyNotFoundException($"{eid}")
-                | Some (idx, storage) ->
-                    storage.Ids.RemoveAt(idx)
-                    storage.ComponentColumns
-                    |> Array.iter ^fun col ->
-                        col.Accept({ new IComponentColumnVisitor<_> with
-                            member _.Visit(col) =
-                                col.Components.RemoveAt(idx)
-                                true
-                        }) |> ignore
-                    ()
-            lazyActions.Add(action)
+            // let action () =
+            //     let r =
+            //         world.Archetypes
+            //         |> Seq.tryPick ^fun (KeyValue (_, storage)) ->
+            //             let idx = storage.Ids.IndexOf(eid)
+            //             if idx = -1
+            //             then None
+            //             else Some (idx, storage)
+            //     match r with
+            //     | None -> raise ^ KeyNotFoundException($"{eid}")
+            //     | Some (idx, storage) ->
+            //         storage.Ids.RemoveAt(idx)
+            //         storage.ComponentColumns
+            //         |> Array.iter ^fun col ->
+            //             col.Accept({ new IComponentColumnVisitor<_> with
+            //                 member _.Visit(col) =
+            //                     col.Components.RemoveAt(idx)
+            //                     true
+            //             }) |> ignore
+            //         ()
+            // lazyActions.Add(action)
+            failwith "TODO"
 
         member this.TryGetEntityView(eid) = failwith "todo"
 

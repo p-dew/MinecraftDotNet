@@ -175,6 +175,7 @@ let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
 //         ()
 //     )
 
+
 let configureEcs (ecs: EcsSchedulerBuilder) : unit =
     let renderGroup = ecs.CreateGroup("render", Threading.ThreadPool)
     let logicGroup = ecs.CreateGroup("logic", Threading.ThreadPool)
