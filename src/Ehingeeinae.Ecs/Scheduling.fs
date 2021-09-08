@@ -9,15 +9,15 @@ open Ehingeeinae.Ecs.Systems
 
 type ScheduledSystemComponent =
     { Type: Type
-      IsReadOnly: bool }
+      IsMutable: bool }
 
 module ScheduledSystemComponent =
 
     let isColliding (cs1: ScheduledSystemComponent list) (cs2: ScheduledSystemComponent list) : bool =
         Seq.allPairs cs1 cs2
         |> Seq.exists ^fun (c1, c2) ->
-            let anyIsWrite = not c1.IsReadOnly || not c2.IsReadOnly
-            c1.Type = c2.Type && anyIsWrite
+            let anyIsMutable = c1.IsMutable || c2.IsMutable
+            c1.Type = c2.Type && anyIsMutable
 
 type GroupId = GroupId of Guid
 

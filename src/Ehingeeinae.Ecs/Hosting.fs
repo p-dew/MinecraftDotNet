@@ -65,7 +65,7 @@ type EcsSchedulerBuilder(services: IServiceCollection) =
         let system = systemFactory.CreateSystem(queryFactory')
         factoryExecuted <- true
         let schedulerSystem =
-            let usingComponents = compTypes |> Seq.map (fun (compType, isReadOnly) -> { Type = compType; IsReadOnly = isReadOnly }) |> Seq.toList
+            let usingComponents = compTypes |> Seq.map (fun (compType, isMutable) -> { Type = compType; IsMutable = isMutable }) |> Seq.toList
             { System = system
               UsingComponents = Some usingComponents
               GroupInfo = groupInfo }

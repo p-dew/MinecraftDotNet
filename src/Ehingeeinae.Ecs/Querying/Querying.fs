@@ -80,13 +80,13 @@ type IEcsComponentVisitor<'R> =
 
 type IShapeEcsComponent =
     abstract Component: TypeShape
-    abstract IsReadOnly: bool
+    abstract IsMutable: bool
     abstract Accept<'R> : IEcsComponentVisitor<'R> -> 'R
 
-type ShapeEcsComponent<'c>(isReadOnly: bool) =
+type ShapeEcsComponent<'c>(isMutable: bool) =
     interface IShapeEcsComponent with
         member _.Component = upcast shapeof<'c>
-        member _.IsReadOnly = isReadOnly
+        member _.IsMutable = isMutable
         member this.Accept(v) = v.Visit<'c>()
 
 [<RequireQualifiedAccess>]
@@ -96,12 +96,12 @@ module Shape =
         match shape.ShapeInfo with
         | TypeShapeInfo.Generic (td, tArgs) when td = typedefof<EcsReadComponent<_>> ->
             let shapeEcsComponent =
-                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(tArgs, [| true |])
+                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(tArgs, [| false |])
                 :?> IShapeEcsComponent
             EcsReadComponent shapeEcsComponent
         | TypeShapeInfo.Generic (td, tArgs) when td = typedefof<EcsWriteComponent<_>> ->
             let shapeEcsComponent =
-                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(tArgs, [| false |])
+                Activator.CreateInstanceGeneric<ShapeEcsComponent<_>>(tArgs, [| true |])
                 :?> IShapeEcsComponent
             EcsWriteComponent shapeEcsComponent
         | _ when (match shape with :? TypeShape<EcsEntityId> -> true | _ -> false) ->
@@ -178,7 +178,7 @@ module QueryArgument =
     let getCompTypes (arg: QueryArgument) : (Type * bool) list =
         let getCompTypesOfPrimitive (primitive: QueryArgumentPrimitive) =
             match primitive with
-            | QueryArgumentPrimitive.Component shape -> [ shape.Component.Type, shape.IsReadOnly ]
+            | QueryArgumentPrimitive.Component shape -> [ shape.Component.Type, shape.IsMutable ]
             | QueryArgumentPrimitive.EntityId -> [ ]
         match arg with
         | QueryArgument.Single primitive -> getCompTypesOfPrimitive primitive
