@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Components.fs" />
+        <Compile Include="Benchmarks\QueryingBenchs.fs" />
+        <Compile Include="Benchmarks\LegionBenchmark.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
+    </ItemGroup>
+
+</Project>

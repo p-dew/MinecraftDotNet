@@ -1,5 +1,11 @@
 module Ehingeeinae.Playground.Program
 
+open System.Diagnostics
+open System.Threading
+open Ehingeeinae.Ecs.Hosting
+open Ehingeeinae.Ecs.Scheduling
+open Ehingeeinae.Ecs.Systems
+
 #nowarn "9"
 
 open System
@@ -22,6 +28,40 @@ open Ehingeeinae.Ecs.Querying
 open Ehingeeinae.Playground
 
 
+let inline ( ^ ) f x = f x
+
+// module Example2 =
+//
+//     open Ehingeeinae.Ecs.Systems
+//
+//     [<Struct>]
+//     type Position =
+//         { Position: Vector3 }
+//
+//     [<Struct>]
+//     type Player = struct end
+//
+//     [<Struct>]
+//     type Entity = struct end
+//
+//     [<Struct>]
+//     type ToUnload = struct end
+//
+//     type FooSystem(entityManager: IEcsWorldEntityManager, queryExecutor: EcsWorldQueryExecutor) =
+//         interface IEcsSystem with
+//             member this.Update(ctx) =
+//                 let criticalLength = 10.f
+//                 let players = EcsQuery.query<Position cread * Player cread> |> queryExecutor.ExecuteQuery
+//                 let entities = EcsQuery.query<EcsEntityId * Position cread * Entity cread> |> queryExecutor.ExecuteQuery
+//                 for eid, entityPosition, _ in entities do
+//                     let isEnoughFarForUnload =
+//                         players
+//                         |> Seq.map fst
+//                         |> Seq.exists ^fun playerPosition ->
+//                             Vector3.Distance(playerPosition.Value.Position, entityPosition.Value.Position) > criticalLength
+//                     if isEnoughFarForUnload then
+//                         entityManager.AddComponent(eid, ToUnload())
+
 [<Struct>]
 type Position =
     { Position: Vector2 }
@@ -31,90 +71,139 @@ type Velocity =
     { Velocity: Vector2 }
 
 [<Struct>]
+type Named = { Name: string }
+
+[<Struct>]
 type StaticBody = struct end
 
-[<Struct>]
-type DecimalX10 = { D0: decimal; D1: decimal; D2: decimal; D3: decimal; D4: decimal; D5: decimal; D6: decimal; D7: decimal; D8: decimal; D9: decimal }
+// ----
 
-[<Struct>]
-type LargeComponent =
-    { DX0: DecimalX10; DX1: DecimalX10; DX2: DecimalX10; DX3: DecimalX10 }
+type MovementSystemFactory(queryExecutor: EcsWorldQueryExecutor) =
+    interface IEcsSystemFactory with
+        member _.CreateSystem(queryFactory) =
+            let query = queryFactory.CreateQuery<{| Position: Position cwrite; Velocity: Velocity cread |}>()
+            EcsSystem.create ^fun ctx ->
+                let comps = queryExecutor.ExecuteQuery(query)
+                for comp in comps do
+                    comp.Position.Value <- { Position = comp.Position.Value.Position + comp.Velocity.Value.Velocity}
+
+// type MovementSystem2(query: IEcsQuery<Position cwrite>, queryExecutor: EcsWorldQueryExecutor) =
+//     interface IEcsSystem with
+//         member this.Update(ctx) =
+//             let comps = queryExecutor.ExecuteQuery(query)
+//             for position in comps do
+//                 position.Value <- { Position = position.Value.Position - Vector2.UnitY }
+//
+// type PrintingSystem(query: IEcsQuery<Position cread * Named cread>, queryExecutor: EcsWorldQueryExecutor) =
+//     interface IEcsSystem with
+//         member this.Update(ctx) =
+//             printfn "PrintSystem.Update"
+//             let comps = queryExecutor.ExecuteQuery(query)
+//             for pos, named in comps do
+//                 let pos = pos.Value.Position
+//                 let name = named.Value.Name
+//                 printf $"{name}({pos.X}, {pos.Y}) "
+//             printfn ""
+
+let printingSystemFactory (services: IServiceProvider) =
+    EcsSystemFactory.create ^fun queryFactory ->
+        let query = queryFactory.CreateQuery<Position cread * Named cread>()
+        let queryExecutor = services.GetRequiredService<EcsWorldQueryExecutor>()
+        let stopwatch = Stopwatch()
+        stopwatch.Start()
+        EcsSystem.create ^fun ctx ->
+            printfn $"PrintSystem.Update; Last update: {stopwatch.Elapsed}"
+            stopwatch.Restart()
+            let comps = queryExecutor.ExecuteQuery(query)
+            for pos, named in comps do
+                let pos = pos.Value.Position
+                let name = named.Value.Name
+                printf $"{name}({pos.X}, {pos.Y}) "
+            printfn ""
 
 
-let test (logger: ILogger) (entityManager: EcsWorldEntityManager) =
-    for i in 0 .. 999999 do
-        if i % 1000 = 0 then logger.LogInformation($"i: {i}")
-        entityManager.AddEntity(({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) }, Unchecked.defaultof<LargeComponent>)) |> ignore
+// ----
 
-let work (services: IServiceProvider) =
-    let logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("work")
-
-    let world = EcsWorld.createEmpty ()
-    let worldEntityManager = EcsWorldEntityManager(world, services.GetRequiredService())
-    let worldQueryExecutor = EcsWorldQueryExecutor(world)
-
-    logger.LogInformation($"World init: %A{world}")
-
-    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2( 1f,  1f) }) |> ignore
-    worldEntityManager.AddEntity({ Position = Vector2(-2f, -2f) }, { Velocity = Vector2(-1f, -1f) }) |> ignore
-    worldEntityManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody()) |> ignore
-
-    logger.LogInformation($"World seeded: %A{world}")
-
-    let q = ecsQuery { EcsQueryC.comp<Position>; EcsQueryC.comp<Velocity> } |> EcsQuery.withFilter (-EcsQueryFilter.comp<StaticBody>)
-    let comps = worldQueryExecutor.ExecuteQuery(q)
-    for (position: EcsComponent<Position>), (velocity: EcsComponent<Velocity>) in comps do
-        let newPosition = { Position = position.Value.Position + velocity.Value.Velocity}
-        EcsComponent.updateValue position &newPosition
-
-    logger.LogInformation($"World result: %A{world}")
-
+let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
+    worldManager.AddEntities([
+        for i in 0 .. 2 do
+            let i = float32 i
+            ({ Position = Vector2( 2f * i,  2f) }, { Velocity = Vector2( 1f,  1f) }, { Name = $"A{i}" })
+            ({ Position = Vector2(-2f, -2f * i) }, { Velocity = Vector2(-1f, -1f) }, { Name = $"B{i}" })
+    ]) |> ignore
+    let eid = worldManager.AddEntity({ Position = Vector2( 2f,  2f) }, { Velocity = Vector2(-1f, -1f) }, StaticBody())
+    // (worldEntityManager :> IEcsWorldEntityManager).RemoveEntity(eid)
     ()
+
+// let work (services: IServiceProvider) =
+//     let logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("work")
+//
+//     let world = EcsWorld.createEmpty ()
+//     let worldEntityManager = EcsWorldEntityManager(world, services.GetRequiredService())
+//     let worldQueryExecutor = EcsWorldQueryExecutor(world)
+//
+//     // ----
+//     // Systems
+//
+//     let systems =
+//         SystemGroupBuilder()
+//             .AddSystem("Logic", fun q -> upcast MovementSystem(q.CreateQuery(), worldQueryExecutor))
+//             .AddSystem("Logic", fun q -> upcast MovementSystem2(q.CreateQuery(), worldQueryExecutor))
+//             .AddSystem("Render", fun q -> upcast PrintingSystem(q.CreateQuery(), worldQueryExecutor))
+//             .Build()
+//
+//     let scheduler = SystemGroupUpdater(systems)
+//
+//     // ----
+//
+//     logger.LogInformation($"World init: %A{world}")
+//
+//     seedWorld worldEntityManager
+//     worldEntityManager.Commit()
+//
+//     logger.LogInformation($"World seeded: %A{world}")
+//
+//     scheduler.UpdateGroups([ "Logic"; "Render" ])
+//
+//     logger.LogInformation($"World result: %A{world}")
+//
+//     ()
+
+// let g1s1 (services: IServiceProvider) =
+//     EcsSystemFactory.create (fun queryFactory ->
+//         let q = queryFactory.CreateQuery()
+//         ()
+//     )
+
+let configureEcs (ecs: EcsSchedulerBuilder) : unit =
+    let group1 = ecs.CreateGroup("group1", Threading.ThreadPool)
+    ecs.AddSystem<MovementSystemFactory>(group1)
+    ecs.AddSystem(group1, printingSystemFactory)
+    ecs.AddTiming(group1, 1_000.f)
+    ecs.AddSeeder(seedWorld)
 
 
 let configureServices (services: IServiceCollection) : unit =
-    services.AddLogging(fun logging -> logging.AddConsole() |> ignore) |> ignore
     ()
 
 // ----
 
-type Worker(services, lifetime, loggerFactory: ILoggerFactory) =
-    inherit SingleWorkHostedService(async { do work services }, lifetime, loggerFactory.CreateLogger<_>())
-
 let createHostBuilder args =
     Host.CreateDefaultBuilder(args)
+        .ConfigureLogging(fun logging ->
+            logging.AddConsole() |> ignore
+        )
         .ConfigureServices(fun services ->
-            services.AddHostedService<Worker>() |> ignore
-            ()
+            services.AddEcs(configureEcs) |> ignore
         )
         .ConfigureServices(configureServices)
+        .ConfigureServices(fun services -> services.AddSingleton(services) |> ignore)
 
 [<EntryPoint>]
 let main args =
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
-    (createHostBuilder args).Build().Run()
-
-//    test ()
-//    exit 0
-//
-//    printfn $"World init: %A{world}"
-//
-//    worldManager.AddEntity1(EcsEntityId 1UL) |> ignore
-//
-//    let eid1 = worldManager.AddEntityN()({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(1f, 1f) })
-//    let eid2 = worldManager.AddEntityN()({ Position = Vector2(2f, 2f) }, { Velocity = Vector2(-1f, -1f) })
-//
-//    printfn $"World seed: %A{world}"
-//
-//    worldManager.QueryComponent2<Position, Velocity>()
-//    |> Seq.map (fun (a1, a2) -> (a1.AsMemory(), a2.AsMemory()))
-//    |> ArraySeq.iter2 (ByRefAction<_, _> (fun position velocity ->
-//        let pPosition = NativePtr.ofVoidPtr<Position> (Unsafe.AsPointer(&position))
-//        NativePtr.set pPosition 0 { Position = Vector2.Add(position.Position, velocity.Velocity) }
-//
-////        position <- { Position = Vector2.Add(position.Position, velocity.Velocity) }
-//        ()
-//    ))
-//
-//    printfn $"World result: %A{world}"
+    let host = (createHostBuilder args).Build()
+    // let services = host.Services.GetRequiredService<IServiceCollection>() |> Seq.toArray
+    // printfn $">>> services:\n%A{services}\n<<<"
+    host.Run()
     0

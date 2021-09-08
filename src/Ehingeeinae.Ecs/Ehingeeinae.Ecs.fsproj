@@ -9,16 +9,21 @@
         <Compile Include="Utils.fs" />
         <Compile Include="Core.fs" />
         <Compile Include="Worlds.fs" />
+        <Compile Include="Querying\Querying.fs" />
+        <Compile Include="Querying\QueryOptimized.fs" />
+        <Compile Include="Querying\EcsQueryBuilder.fs" />
+        <Compile Include="Querying\Filtering.fs" />
+        <Compile Include="Querying\Executing.fs" />
         <Compile Include="Systems.fs" />
         <Compile Include="Scheduling.fs" />
         <Compile Include="Hosting.fs" />
-        <Compile Include="Querying.fs" />
-        <Compile Include="pg.fs" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="FSharp.Quotations.Evaluator" Version="2.1.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+      <PackageReference Include="Ply" Version="0.3.1" />
       <PackageReference Include="TypeShape" Version="9.0.0" />
     </ItemGroup>
 
