@@ -65,7 +65,7 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
 
         let systemBatches = SchedulerSystem.batched (systems |> Seq.toList)
         for systemBatch in systemBatches do
-            let completed = ref 0
+            let mutable completed = 0
             use waitHandle = new ManualResetEvent(false)
             for system in systemBatch do
                 match system.GroupInfo.Threading with
@@ -73,14 +73,14 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
                     runner ^fun () ->
                         let ctx = Unchecked.defaultof<_>
                         system.System.Update(ctx)
-                        let completed' = Interlocked.Increment(&completed.contents)
+                        let completed' = Interlocked.Increment(&completed)
                         if completed' = systemBatch.Length then waitHandle.Set() |> ignore
 
                 | Threading.ThreadPool ->
                     ThreadPool.QueueUserWorkItem(fun _ ->
                         let ctx = Unchecked.defaultof<_>
                         system.System.Update(ctx)
-                        let completed' = Interlocked.Increment(&completed.contents)
+                        let completed' = Interlocked.Increment(&completed)
                         if completed' = systemBatch.Length then waitHandle.Set() |> ignore
                     ) |> ignore
 
