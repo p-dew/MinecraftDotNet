@@ -1,6 +1,7 @@
 namespace Ehingeeinae.Ecs.Scheduling
 
 open System
+open System.Collections.Generic
 open System.Diagnostics
 open System.Threading
 open Ehingeeinae.Ecs
@@ -43,27 +44,37 @@ module SchedulerSystem =
             ScheduledSystemComponent.isColliding cs1 cs2
         | _ -> true
 
-    let batched (systems: SchedulerSystem list) : SchedulerSystem list list =
-        let currentBatch = ResizeArray()
-        let allBatches = ResizeArray()
-        for system in systems do
-            let isColliding = currentBatch |> Seq.exists (isColliding system)
-            if isColliding then
-                allBatches.Add(currentBatch |> Seq.toList)
-                currentBatch.Clear()
-                currentBatch.Add(system)
-            else
-                currentBatch.Add(system)
-        if currentBatch.Count > 0 then
-            allBatches.Add(currentBatch |> Seq.toList)
-        allBatches |> Seq.toList
+    let batched (systems: SchedulerSystem seq) : SchedulerSystem array seq =
+        seq {
+            let currentBatch = ResizeArray()
+            for system in systems do
+                let isColliding = currentBatch |> Seq.exists (isColliding system)
+                if isColliding then
+                    yield currentBatch.ToArray() // make a copy
+                    currentBatch.Clear()
+                    currentBatch.Add(system)
+                else
+                    currentBatch.Add(system)
+            if currentBatch.Count > 0 then
+                yield currentBatch.ToArray() // make a copy
+        }
 
 
 type SystemGroupUpdater(systems: SchedulerSystem seq) =
-    member this.UpdateGroups(groupIds: GroupId seq) =
-        let systems = systems |> Seq.filter ^fun s -> Seq.contains s.GroupInfo.Id groupIds
+    let groupSystemCache = Dictionary<HashSet<GroupId>, SchedulerSystem array seq>(HashSet.CreateSetComparer())
 
-        let systemBatches = SchedulerSystem.batched (systems |> Seq.toList)
+    let getSystems (groupIds: GroupId seq) =
+        let groupIds = HashSet(groupIds)
+        match groupSystemCache.TryGetValue(groupIds) with
+        | true, systemBatches -> systemBatches
+        | false, _ ->
+            let systemsFiltered = systems |> Seq.filter ^fun s -> Seq.contains s.GroupInfo.Id groupIds
+            let systemBatches = SchedulerSystem.batched systemsFiltered
+            groupSystemCache.[groupIds] <- systemBatches
+            systemBatches
+
+    member this.UpdateGroups(groupIds: GroupId seq) =
+        let systemBatches = getSystems groupIds
         for systemBatch in systemBatches do
             let mutable completed = 0
             use waitHandle = new ManualResetEvent(false)
