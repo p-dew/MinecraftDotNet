@@ -1,5 +1,6 @@
 namespace Ehingeeinae.Collections
 
+open System
 open System.Runtime.CompilerServices
 
 //////////////
@@ -161,7 +162,7 @@ type ChunkList<'a> =
     member this.Item
         with get(idx: int) =
             if idx < 0 || idx >= this.count then
-                failwith "Out of ChunkList index"
+                raise <| IndexOutOfRangeException()
             &this.ItemUnchecked(idx)
 
     member this.ChunkCapacity = this.chunkCapacity
