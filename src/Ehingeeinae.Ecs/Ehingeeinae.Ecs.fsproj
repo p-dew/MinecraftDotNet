@@ -17,6 +17,10 @@
         <Compile Include="Systems.fs" />
         <Compile Include="Scheduling.fs" />
         <Compile Include="Hosting.fs" />
+        <Compile Include="Experimental\Storage\Component.fs" />
+        <Compile Include="Experimental\Storage\EntityId.fs" />
+        <Compile Include="Experimental\Storage\Archetype.fs" />
+        <Compile Include="Experimental\Storage\Column.fs" />
     </ItemGroup>
 
     <ItemGroup>
