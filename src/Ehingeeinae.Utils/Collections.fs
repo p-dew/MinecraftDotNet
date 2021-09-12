@@ -108,6 +108,14 @@ type ChunkListChunk<'a>(array: 'a array) =
     member _.Array = array
     member _.Item with get(idx: int) = &array.[idx]
 
+[<Struct>]
+type ChunkListChunkChecked<'a>(array: 'a array, len: int) =
+    member _.Array = array
+    member _.Item with get(idx: int) =
+        if idx >= len then failwith "Out of chunk range"
+        &array.[idx]
+    member _.Count = len
+
 
 [<AutoOpen>]
 module ChunkListConstants =
@@ -162,6 +170,15 @@ type ChunkList<'a> =
     member this.Count = this.count
 
     member this.IsEmpty = this.count = 0
+
+    member this.Chunks = seq {
+        let mutable currentChunkStart = 0
+        for ch in this.chunks do
+            yield ChunkListChunkChecked(ch.Array, Math.Min(this.chunkCapacity, this.count - currentChunkStart))
+            currentChunkStart <- currentChunkStart + this.chunkCapacity
+    }
+
+    member this.ChunksUnchecked = this.chunks
 
     member private this.ReserveOne() =
         let add () = this.chunks.Add(ChunkListChunk(this.chunkCapacity))
