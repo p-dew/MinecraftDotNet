@@ -117,17 +117,12 @@ module ChunkListConstants =
     let DefaultInitialCapacity = 4
 
 module private Internal =
-    let inline initChunks (capacity: int) (limit: int) (doRealloc: bool) : ResizeArray<ChunkListChunk<'a>> =
+    let inline initChunks (capacity: int) (limit: int) : ResizeArray<ChunkListChunk<'a>> =
         let tailLen = capacity % limit
         let hasTail = tailLen <> 0
         let chunkCount = if hasTail then capacity / limit + 1 else capacity / limit
         let mutable chunks = ResizeArray(chunkCount)
-        if doRealloc && hasTail then
-            failwith "TODO" // TODO: Обработка неполных чанков
-            for _ in 0 .. chunkCount - 2 do chunks.Add(Array.zeroCreate limit |> ChunkListChunk)
-            chunks.Add(Array.zeroCreate tailLen |> ChunkListChunk)
-        else
-            for _ in 0 .. chunkCount - 1 do chunks.Add(Array.zeroCreate limit |> ChunkListChunk)
+        for _ in 0 .. chunkCount - 1 do chunks.Add(Array.zeroCreate limit |> ChunkListChunk)
         chunks
 
 
@@ -137,16 +132,13 @@ type ChunkList<'a> =
     val mutable internal count: int
     /// Max chunk size
     val mutable internal chunkCapacity: int
-    /// When true then non filled chunks will be reallocated during a filling, as ResizeArray does it
-    val internal realloc: bool
 
     // Реаллоцирование пока не реализовано и не факт что будет
     private new(initialMinCapacity: int, chunkCapacity: int, realloc: bool) =
-        let initialChunks = Internal.initChunks initialMinCapacity chunkCapacity realloc
+        let initialChunks = Internal.initChunks initialMinCapacity chunkCapacity
         { chunks = initialChunks
           count = 0
-          chunkCapacity = chunkCapacity
-          realloc = realloc }
+          chunkCapacity = chunkCapacity }
 
     new(initialMinCapacity: int, chunkCapacity: int) = ChunkList(initialMinCapacity, chunkCapacity, false)
     new(initialMinCapacity: int) = ChunkList(initialMinCapacity, DefaultChunkCapacity, false)
