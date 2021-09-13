@@ -27,7 +27,8 @@ type CompByRef<'T> =
     val idx: int
     val getByRefState: GetByRefState
 
-    new(arr: 'T array, idx: int) = { arr = arr; idx = idx; getByRefState = { GetByRefState.HasAccess = false } }
+//    new(arr: 'T array, idx: int) = { arr = arr; idx = idx; getByRefState = { GetByRefState.HasAccess = false } }
+    new(arr: 'T array, idx: int, sharedState: GetByRefState) = { arr = arr; idx = idx; getByRefState = sharedState }
 
     member this.AsCompInRef() = CompInRef(this.arr, this.idx)
 
