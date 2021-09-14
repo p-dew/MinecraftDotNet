@@ -22,6 +22,7 @@
         <Compile Include="Experimental\Storage\Archetype.fs" />
         <Compile Include="Experimental\Storage\Column.fs" />
         <Compile Include="Experimental\Storage\Table.fs" />
+        <Compile Include="Experimental\Storage\Storage.fs" />
     </ItemGroup>
 
     <ItemGroup>

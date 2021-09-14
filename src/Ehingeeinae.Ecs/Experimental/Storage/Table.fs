@@ -7,10 +7,8 @@ open Ehingeeinae.Ecs.Experimental.Storage
 type ComponentId =
     { Index: int; Type: Type }
 
-type DynamicColumn = obj // Column<'T>
-
 type TableBuilder() =
-    let mutable columns = ResizeArray<struct(ComponentId * DynamicColumn)>(32)
+    let mutable columns = ResizeArray<struct(ComponentId * IDynamicColumn)>(32)
 
     member this.RegisterColumn<'T>() =
         let ty = typeof<'T>
@@ -22,7 +20,7 @@ type TableBuilder() =
 
         let newIdx = columns.Count
         let cid = { Index = newIdx; Type = ty }
-        let element = struct(cid, Column<'T>() :> DynamicColumn)
+        let element = struct(cid, Column<'T>() :> IDynamicColumn)
         columns.Add(element)
         ()
 
@@ -34,9 +32,9 @@ type TableBuilder() =
 and Table =
 
     val entities: ResizeArray<EntityId>
-    val columns: struct(ComponentId * DynamicColumn) array
+    val columns: struct(ComponentId * IDynamicColumn) array
 
-    internal new(entities: ResizeArray<EntityId>, columns: struct(ComponentId * obj) array) =
+    internal new(entities: ResizeArray<EntityId>, columns: struct(ComponentId * IDynamicColumn) array) =
         { entities = entities; columns = columns }
 
     member this.Columns = this.columns
@@ -55,3 +53,11 @@ and Table =
         let struct(cid, col) = this.Columns.[idx]
         assert(typeof<'T> = cid.Type)
         col :?> Column<'T>
+
+    member this.SwapRemove(idx: int) =
+        let lastE = this.entities.[this.entities.Count - 1]
+        this.entities.[idx] <- lastE
+        this.entities.RemoveAt(this.entities.Count - 1)
+        for struct(_, col) in this.columns do
+            col.SwapRemove(idx)
+        ()

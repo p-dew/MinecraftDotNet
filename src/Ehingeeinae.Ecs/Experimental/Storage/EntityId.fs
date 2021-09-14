@@ -1,10 +1,13 @@
 namespace Ehingeeinae.Ecs.Experimental.Storage
 
+type RawEId = int // Raw entity Id
+type Generation = uint
+
 [<Struct>]
 type EntityId =
-    val internal id: uint32
-    val internal generation: uint32
-    internal new(id: uint32, generation: uint32) = { id = id; generation = generation }
+    val internal id: RawEId
+    val internal generation: Generation
+    internal new(id: RawEId, generation: Generation) = { id = id; generation = generation }
 
     member this.Id = this.id
     member this.Generation = this.generation
