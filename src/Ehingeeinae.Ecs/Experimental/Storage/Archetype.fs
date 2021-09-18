@@ -5,11 +5,11 @@ open System.Collections.Generic
 
 
 type Archetype(comps: HashSet<Type>) =
+
+    static let hashSetComparer = HashSet<Type>.CreateSetComparer()
+
     member this.ComponentTypes = comps
     member this.ContainsAll(subSet: Type seq) = comps.IsSupersetOf(subSet)
-    member this.ContainsAll(subSet: Type array) = comps.IsSupersetOf(subSet)
 
-    member this.Equals(arch: Archetype) = comps.SetEquals(arch.ComponentTypes)
-
-
-
+    member this.Equals(arch: Archetype) =
+        hashSetComparer.Equals(arch.ComponentTypes, this.ComponentTypes)

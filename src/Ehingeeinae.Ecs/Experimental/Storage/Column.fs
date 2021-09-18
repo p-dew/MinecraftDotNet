@@ -1,18 +1,22 @@
 namespace Ehingeeinae.Ecs.Experimental.Storage
 
-open System.Collections
-open System.Collections.Generic
+open System
 open Ehingeeinae.Collections
 
 
 type IDynamicColumn =
-    abstract SwapRemove: int -> unit
-//    abstract Cast<'U> : unit -> Column<'U>
+    abstract SwapRemove: idx: int -> unit
+    abstract ComponentType: Type
 
 /// Список компонента в архетипе
-and Column<'T>() =
-    let mutable components = ChunkList<'T>()
-    let mutable componentsTicks = ChunkList<ComponentTicks>()
+type Column<'T>() =
+    let components = ChunkList<'T>()
+    let componentsTicks = ChunkList<ComponentTicks>()
+
+    let replaceFromEnd (chunkList: ChunkList<_>) (idx: int) =
+        let last = chunkList.[chunkList.Count - 1]
+        chunkList.[idx] <- last
+        chunkList.RemoveLast()
 
     member internal this.Components = components
     member internal this.Ticks = componentsTicks
@@ -23,19 +27,16 @@ and Column<'T>() =
 
     /// Удаляет элемент по индексу и ставит на его место последний
     member this.SwapRemove(idx: int) =
-        let lastC = components.[components.Count - 1]
-        components.[idx] <- lastC
-        components.RemoveLast()
-        let lastT = componentsTicks.[componentsTicks.Count - 1]
-        componentsTicks.[idx] <- lastT
-        componentsTicks.RemoveLast()
+        replaceFromEnd components idx
+        replaceFromEnd componentsTicks idx
 
     interface IDynamicColumn with
         member this.SwapRemove(idx) = this.SwapRemove(idx)
-//        member this.Cast<'a>() : Column<'a> = this :?> Column<'a>
+        member _.ComponentType = typeof<'T>
 
 
-
-
-
-
+[<AutoOpen>]
+module DynamicColumnExtensions =
+    type IDynamicColumn with
+        [<RequiresExplicitTypeArguments>]
+        member this.Cast<'a>() = this :?> Column<'a>

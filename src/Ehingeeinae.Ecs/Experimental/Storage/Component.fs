@@ -5,38 +5,33 @@ namespace Ehingeeinae.Ecs.Experimental.Storage
 [<Struct>]
 type ComponentTicks =
     { Added: uint
-      Change: uint }
+      Changed: uint }
 
 
 [<Struct>]
-type CompInRef<'T> =
+type InRefComponent<'T> =
     val arr: 'T array
     val idx: int
 
-    new(arr: 'T array, idx: int) = { arr = arr; idx = idx }
+    internal new(arr: 'T array, idx: int) = { arr = arr; idx = idx }
 
-    member this.Value
-        with get(): 'T inref = &this.arr.[this.idx]
+    member this.Value: 'T inref = &this.arr.[this.idx]
 
 
-type GetByRefState = { mutable HasAccess: bool }
+type GetByRefState = { mutable HadAccessed: bool }
 
 [<Struct>]
-type CompByRef<'T> =
+type ByRefComponent<'T> =
     val arr: 'T array
     val idx: int
     val getByRefState: GetByRefState
 
-//    new(arr: 'T array, idx: int) = { arr = arr; idx = idx; getByRefState = { GetByRefState.HasAccess = false } }
-    new(arr: 'T array, idx: int, sharedState: GetByRefState) = { arr = arr; idx = idx; getByRefState = sharedState }
+    internal new(arr: 'T array, idx: int, sharedState: GetByRefState) = { arr = arr; idx = idx; getByRefState = sharedState }
 
-    member this.AsCompInRef() = CompInRef(this.arr, this.idx)
+    member this.AsInRef() = InRefComponent(this.arr, this.idx)
 
-    member this.Value
-        with get(): 'T inref = &this.arr.[this.idx]
+    member this.Value: 'T inref = &this.arr.[this.idx]
 
-    member this.ValueMutable
-        with get(): 'T byref =
-            this.getByRefState.HasAccess <- true
-            &this.arr.[this.idx]
-
+    member this.ValueMutable: 'T byref =
+        this.getByRefState.HadAccessed <- true
+        &this.arr.[this.idx]

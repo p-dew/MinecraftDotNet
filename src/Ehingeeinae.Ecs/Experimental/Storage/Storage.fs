@@ -16,7 +16,7 @@ type EntityLocation =
 [<AutoOpen>]
 module internal Internal =
     let archetypeOfTable (t: Table) =
-        let comps = t.Columns |> Array.map (fun struct (cid, _) -> cid.Type)
+        let comps = t.Columns |> Array.map (fun col -> col.ComponentType)
         let typeSet = HashSet(comps)
         Archetype(typeSet)
 
@@ -25,9 +25,9 @@ module internal Internal =
 type Storage() =
     // Массив поколений сущности. Вероятно, не может быть уменьшен в процессе работы
     // без прекращения отслеживания устаревших Id.
-    let mutable generations = ResizeArray<Generation>()
-    let mutable locations = ResizeArray<EntityLocation>()
-    let mutable tables = ResizeArray<struct(Archetype * Table)>()
+    let generations = ResizeArray<Generation>()
+    let locations = ResizeArray<EntityLocation>()
+    let tables = ResizeArray<struct(Archetype * Table)>()
 
 //    member this.TryAddTable(types: Type array) =
 //        let arch = Archetype(HashSet(types))
@@ -43,11 +43,3 @@ type Storage() =
     member this.FindTable(comps: Type array) =
 
         ()
-
-
-
-
-
-
-
-

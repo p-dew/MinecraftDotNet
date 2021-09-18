@@ -11,5 +11,3 @@ type EntityId =
 
     member this.Id = this.id
     member this.Generation = this.generation
-
-
