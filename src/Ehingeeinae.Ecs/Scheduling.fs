@@ -23,7 +23,7 @@ type GroupId = GroupId of uint64
 
 [<RequireQualifiedAccess>]
 type Threading =
-    | Thread of ((unit -> unit) -> unit)
+    | Command of ((unit -> unit) -> unit)
     | ThreadPool
 
 type GroupInfo =
@@ -62,10 +62,8 @@ module SchedulerSystem =
 
 type SystemGroupUpdater(systems: SchedulerSystem seq) =
     let systems = systems |> Seq.toArray
-    let groupCount = systems |> Seq.groupBy (fun s -> s.GroupInfo.Id) |> Seq.length
 
     let groupSystemCache = Dictionary<SortedSet<uint64>, SchedulerSystem array array>(SortedSet.CreateSetComparer())
-    // let groupSystemCache = ResizeArray<GroupId seq * SchedulerSystem array array>()
 
     let getSystems (groupIds: GroupId seq) =
         let gids = groupIds
@@ -80,17 +78,6 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
             groupSystemCache.Add((groupIds, systemBatches))
             systemBatches
 
-        // let r =
-        //     groupSystemCache
-        //     |> Seq.tryPick ^fun (gids, systems) ->
-        //         let isSame = (Seq.compareWith Operators.compare groupIds gids) = 0
-        //         if isSame
-        //         then Some systems
-        //         else None
-        // match r with
-        // | Some systemBatches -> systemBatches
-        // | None ->
-
     member this.UpdateGroups(groupIds: GroupId seq) =
         let systemBatches = getSystems groupIds
         for systemBatch in systemBatches do
@@ -98,8 +85,8 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
             use waitHandle = new ManualResetEvent(false)
             for system in systemBatch do
                 match system.GroupInfo.Threading with
-                | Threading.Thread runner ->
-                    runner ^fun () ->
+                | Threading.Command send ->
+                    send ^fun () ->
                         let ctx = { Empty = () }
                         system.System.Update(ctx)
                         let completed' = Interlocked.Increment(&completed)
@@ -107,7 +94,7 @@ type SystemGroupUpdater(systems: SchedulerSystem seq) =
 
                 | Threading.ThreadPool ->
                     ThreadPool.QueueUserWorkItem(fun _ ->
-                        let ctx = Unchecked.defaultof<_>
+                        let ctx = { Empty = () }
                         system.System.Update(ctx)
                         let completed' = Interlocked.Increment(&completed)
                         if completed' = systemBatch.Length then waitHandle.Set() |> ignore

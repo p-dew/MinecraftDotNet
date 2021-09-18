@@ -15,6 +15,10 @@ open Microsoft.Extensions.FileProviders
 
 *)
 
+type IAssetHandle<'TAsset> =
+    inherit IDisposable
+    abstract Value: 'TAsset
+
 type IAssetMonitor<'TAsset> =
     inherit IDisposable
     abstract CurrentValue: 'TAsset
@@ -28,6 +32,10 @@ type BitmapAsset =
       Bitmap: Bitmap }
 
 type IBitmapRepository =
+    abstract BeginUseAsset: BitmapAssetId -> Async<IAssetHandle<BitmapAsset>>
+
+    // ----
+
     abstract LoadBitmap: path: string -> Async<IAssetMonitor<BitmapAsset>>
     abstract UnloadBitmap: id: BitmapAssetId -> Async<unit>
     abstract Get: id: BitmapAssetId -> Async<IAssetMonitor<BitmapAsset>>

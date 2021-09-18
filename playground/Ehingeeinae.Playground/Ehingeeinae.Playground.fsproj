@@ -18,6 +18,7 @@
     
     <ItemGroup>
       <ProjectReference Include="..\..\src\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
+      <ProjectReference Include="..\..\src\Ehingeeinae.Graphics\Ehingeeinae.Graphics.fsproj" />
     </ItemGroup>
 
     <ItemGroup>

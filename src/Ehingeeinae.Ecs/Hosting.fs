@@ -1,6 +1,7 @@
 namespace Ehingeeinae.Ecs.Hosting
 
 open System
+open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open Ehingeeinae.Ecs.Querying
@@ -13,20 +14,18 @@ open FSharp.Control.Tasks
 open Microsoft.Extensions.Logging
 open TypeShape.Core
 
-// type _Void<'T> =
-//     [<DefaultValue>] static val mutable private Value: 'T
-//     static member Absorb(x: 'T) = _Void<_>.Value <- x
 
 type IEcsWorldSeeder =
     abstract Seed: entityManager: IEcsWorldEntityManager -> unit
 
-type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler, seeder: IEcsWorldSeeder, worldEntityManager: IEcsWorldEntityManager) =
+type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler, worldEntityManager: IEcsWorldEntityManager, seeder: IEcsWorldSeeder) =
     let mutable schedulerCts: CancellationTokenSource = null
     let mutable runningTask = null
 
     let runAsync () = unitTask {
         try
             do! Task.Run(fun () ->
+                // seeder |> Option.iter (fun seeder -> seeder.Seed(worldEntityManager))
                 seeder.Seed(worldEntityManager)
                 (worldEntityManager :?> EcsWorldEntityManager).Commit() // FIXME: Remove downcast ugly hack
                 runner.Run(schedulerCts.Token)
@@ -83,38 +82,45 @@ type EcsSchedulerBuilder(services: IServiceCollection) =
               GroupInfo = groupInfo }
         schedulerSystem
 
-    member this.CreateGroup(name, threading) =
+    member this.CreateGroup(name, threadingFactory: IServiceProvider -> Threading) =
         let groupId = GroupId <| nextGroupId ()
-        { Id = groupId; Name = name; Threading = threading }
+        fun sp -> { Id = groupId; Name = name; Threading = threadingFactory sp }
 
-    member this.AddSystem(groupInfo: GroupInfo, systemFactoryFactory: IServiceProvider -> IEcsSystemFactory): unit =
+    member this.AddSystem(groupInfoFactory: IServiceProvider -> GroupInfo, systemFactoryFactory: IServiceProvider -> IEcsSystemFactory): unit =
         services
             .AddSingleton<IEcsSystemFactory>(systemFactoryFactory)
             .AddSingleton<SchedulerSystem>(fun services ->
                 let systemFactory = systemFactoryFactory services
                 let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
-                let schedulerSystem = createSchedulerSystem groupInfo systemFactory queryFactory
+                let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
                 schedulerSystem
             )
         |> ignore
 
+    member this.AddSystem(groupInfo: GroupInfo, systemFactoryFactory) = this.AddSystem((fun _ -> groupInfo), systemFactoryFactory)
+
     [<RequiresExplicitTypeArguments>]
     member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
-            (groupInfo: GroupInfo) =
+            (groupInfoFactory: IServiceProvider -> GroupInfo) =
         services
             .AddSingleton<'TSystemFactory>()
             .AddSingleton<IEcsSystemFactory, 'TSystemFactory>()
             .AddSingleton<SchedulerSystem>(fun services ->
                 let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
                 let systemFactory = services.GetRequiredService<'TSystemFactory>()
-                let schedulerSystem = createSchedulerSystem groupInfo systemFactory queryFactory
+                let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
                 schedulerSystem
             )
         |> ignore
 
-    member this.AddTiming(groupInfo: GroupInfo, interval) =
-        let intervalGroup = { GroupId = groupInfo.Id; IntervalMs = interval }
-        services.AddSingleton(intervalGroup) |> ignore
+    member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
+        (groupInfo: GroupInfo) = this.AddSystem<'TSystemFactory>(fun _ -> groupInfo)
+
+    member this.AddTiming(groupInfoFactory: IServiceProvider -> GroupInfo, interval) =
+        services.AddSingleton<IntervalGroup>(fun services ->
+            let groupInfo = groupInfoFactory services
+            { GroupId = groupInfo.Id; IntervalMs = interval }
+        ) |> ignore
 
     member this.AddSeeder(seedWorld) =
         let seeder = { new IEcsWorldSeeder with member _.Seed(em) = seedWorld em }
