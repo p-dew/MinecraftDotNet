@@ -176,37 +176,43 @@ let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
 //     )
 
 
-let configureEcs (ecs: EcsSchedulerBuilder) : unit =
-    let renderGroup = ecs.CreateGroup("render", Threading.ThreadPool)
-    let logicGroup = ecs.CreateGroup("logic", Threading.ThreadPool)
-    ecs.AddSystem<MovementSystemFactory>(logicGroup)
-    ecs.AddSystem(renderGroup, printingSystemFactory)
-    ecs.AddTiming(renderGroup, 500.f)
-    ecs.AddTiming(logicGroup, 1_000.f)
-    ecs.AddSeeder(seedWorld)
-
-
-let configureServices (services: IServiceCollection) : unit =
-    ()
-
-// ----
-
-let createHostBuilder args =
-    Host.CreateDefaultBuilder(args)
-        .ConfigureLogging(fun logging ->
-            logging.AddConsole() |> ignore
-        )
-        .ConfigureServices(fun services ->
-            services.AddEcs(configureEcs) |> ignore
-        )
-        .ConfigureServices(configureServices)
-        .ConfigureServices(fun services -> services.AddSingleton(services) |> ignore)
+// let configureEcs (ecs: EcsSchedulerBuilder) : unit =
+//     let renderGroup = ecs.CreateGroup("render", Threading.ThreadPool)
+//     let logicGroup = ecs.CreateGroup("logic", Threading.ThreadPool)
+//     ecs.AddSystem<MovementSystemFactory>(logicGroup)
+//     ecs.AddSystem(renderGroup, printingSystemFactory)
+//     ecs.AddTiming(renderGroup, 500.f)
+//     ecs.AddTiming(logicGroup, 1_000.f)
+//     ecs.AddSeeder(seedWorld)
+//
+//
+// let configureServices (services: IServiceCollection) : unit =
+//     ()
+//
+// // ----
+//
+// let createHostBuilder args =
+//     Host.CreateDefaultBuilder(args)
+//         .ConfigureLogging(fun logging ->
+//             logging.AddConsole() |> ignore
+//         )
+//         .ConfigureServices(fun services ->
+//             services.AddEcs(configureEcs) |> ignore
+//         )
+//         .ConfigureServices(configureServices)
+//         .ConfigureServices(fun services -> services.AddSingleton(services) |> ignore)
 
 [<EntryPoint>]
 let main args =
-    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
-    let host = (createHostBuilder args).Build()
-    // let services = host.Services.GetRequiredService<IServiceCollection>() |> Seq.toArray
-    // printfn $">>> services:\n%A{services}\n<<<"
-    host.Run()
+    // Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development")
+    // let host = (createHostBuilder args).Build()
+    // // let services = host.Services.GetRequiredService<IServiceCollection>() |> Seq.toArray
+    // // printfn $">>> services:\n%A{services}\n<<<"
+    // host.Run()
+
+    let expr = Ehingeeinae.Ecs.Experimental.Storage.Shaping.mkAddEntities<int * string * float> (Unchecked.defaultof<_>)
+    let exprStr = ExprToCode.ExprDisplay.display expr
+
+    printfn $"<<<<\n{exprStr}\n>>>>"
+
     0

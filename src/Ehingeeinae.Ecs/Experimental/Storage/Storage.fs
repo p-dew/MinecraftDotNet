@@ -2,24 +2,38 @@ namespace Ehingeeinae.Ecs.Experimental.Storage
 
 open System
 open System.Collections.Generic
+open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Experimental.Storage.Archetype
 
 [<Struct>]
-type TableId = TableId of int
+type TableIndex = TableIndex of int
 
 
 [<Struct>]
 type EntityLocation =
-    { Table: TableId
-      Index: int }
+    { TableIndex: TableIndex
+      EntityIndex: int }
 
 [<AutoOpen>]
-module internal Internal =
-    let archetypeOfTable (t: Table) =
-        let comps = t.Columns |> Array.map (fun col -> col.ComponentType)
-        let typeSet = HashSet(comps)
-        Archetype(typeSet)
+module internal Internals =
 
+    module Archetype =
+        let ofTable (t: Table) =
+            let comps = t.Columns |> Seq.map (fun col -> col.ComponentType)
+            let typeSet = HashSet(comps)
+            Archetype(typeSet)
+
+type IEcsStorage =
+    abstract AddEntity: cs: 'cs -> EntityId
+    abstract AddComponents: eid: EntityId * cs: 'cs -> unit
+    abstract RemoveEntity: eid: EntityId -> unit
+    [<RequiresExplicitTypeArguments>]
+    abstract RemoveComponents<'cs> : eid: EntityId -> unit
+
+
+type StorageTable =
+    { Table: Table
+      Archetype: Archetype }
 
 // Хранилище всех сущностей во всех архетипах
 type Storage() =
@@ -27,7 +41,7 @@ type Storage() =
     // без прекращения отслеживания устаревших Id.
     let generations = ResizeArray<Generation>()
     let locations = ResizeArray<EntityLocation>()
-    let tables = ResizeArray<struct(Archetype * Table)>()
+    let tables = ResizeArray<StorageTable>()
 
 //    member this.TryAddTable(types: Type array) =
 //        let arch = Archetype(HashSet(types))
@@ -40,6 +54,25 @@ type Storage() =
 //
 //        ()
 
-    member this.FindTable(comps: Type array) =
+    member this.FindTable(compTypes: Type seq): Table =
+        tables
+        |> Seq.pick ^fun table ->
+            if table.Archetype.Equals(compTypes)
+            then Some table.Table
+            else None
 
-        ()
+    member this.MatchTables(compTypes: Type seq): Table seq =
+        tables
+        |> Seq.choose ^fun table ->
+            if table.Archetype.ContainsAll(compTypes)
+            then Some table.Table
+            else None
+
+    member this.AddEntity(cs: 'cs): EntityId =
+        failwith ""
+
+    interface IEcsStorage with
+        member this.AddComponents(eid, cs) = failwith "todo"
+        member this.AddEntity(cs) = this.AddEntity(cs)
+        member this.RemoveComponents<'cs>(eid) = failwith "todo"
+        member this.RemoveEntity(eid) = failwith "todo"
