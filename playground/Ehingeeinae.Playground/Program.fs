@@ -6,6 +6,7 @@ open System.Threading
 open Ehingeeinae.Ecs.Hosting
 open Ehingeeinae.Ecs.Resources
 open Ehingeeinae.Ecs.Scheduling
+open Ehingeeinae.Ecs.Scheduling.SystemChainBuilding
 open Ehingeeinae.Ecs.Systems
 open Ehingeeinae.Graphics.Hosting
 open OpenTK.Graphics.OpenGL
@@ -160,23 +161,18 @@ let seedWorld (worldManager: IEcsWorldEntityManager) : unit =
     ()
 
 
-let configureEcs (ecs: EcsSchedulerBuilder) : unit =
-    let renderGroup =
-        ecs.CreateGroup(
-            "render",
-            fun services ->
-                let sender = services.GetRequiredService<IGraphicsCommandSender>()
-                Threading.Command sender.Send
-        )
-    let logicGroup = ecs.CreateGroup("logic", fun _ -> Threading.ThreadPool)
+let buildSystemChain (services: IServiceProvider) (builder: SystemChainBuilder) : unit =
+    let renderLoop =
+        let graphicsSender = services.GetRequiredService<IGraphicsCommandSender>()
+        builder.CreateLoop(500.f, SystemExecutor.command graphicsSender.Send)
+    let logicLoop =
+        builder.CreateLoop(1_000.f, SystemExecutor.threadPool ())
 
-    ecs.AddSystem<MovementSystemFactory>(logicGroup)
-    ecs.AddSystem(renderGroup, printingSystemFactory)
-
-    ecs.AddTiming(renderGroup, 500.f)
-    ecs.AddTiming(logicGroup, 1_000.f)
-
-    ecs.AddSeeder(seedWorld)
+    let queryExecutor = services.GetRequiredService<EcsWorldQueryExecutor>()
+    builder
+        .AddSystem(MovementSystemFactory(queryExecutor), logicLoop)
+        .AddSystem(printingSystemFactory services, renderLoop)
+    |> ignore
     ()
 
 
@@ -193,7 +189,8 @@ let createHostBuilder args =
             logging.AddConsole() |> ignore
         )
         .ConfigureServices(fun services ->
-            services.AddEcs(configureEcs) |> ignore
+            services.AddSingleton<IEcsWorldSeeder>({ new IEcsWorldSeeder with member _.Seed(w) = seedWorld w }) |> ignore
+            services.AddSystemChain(buildSystemChain) |> ignore
             services.AddGraphics(
                 GameWindowSettings(RenderFrequency=5., UpdateFrequency=0.),
                 NativeWindowSettings(Title="Playground", Size=Vector2i(1280, 720), Profile=ContextProfile.Compatability)

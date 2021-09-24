@@ -45,111 +45,127 @@ type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler,
             Task.CompletedTask
 
 
-type IEcsSystemFactory =
-    abstract CreateSystem: queryFactory: IEcsQueryFactory -> IEcsSystem
-
-module EcsSystemFactory =
-    let inline create createSystem = { new IEcsSystemFactory with member _.CreateSystem(qf) = createSystem qf }
-
-type EcsSchedulerBuilder(services: IServiceCollection) =
-
-    let nextGroupId =
-        let mutable lastGroupId = 0uL
-        fun () ->
-            let gid = lastGroupId
-            lastGroupId <- lastGroupId + 1uL
-            gid
-
-    let createSchedulerSystem (groupInfo: GroupInfo) (systemFactory: IEcsSystemFactory) (queryFactory: IEcsQueryFactory) : SchedulerSystem =
-        let compTypes: ResizeArray<Type * bool> = ResizeArray()
-        let mutable factoryExecuted = false
-        let queryFactory' = { new IEcsQueryFactory with
-            member _.CreateQuery<'q>() =
-                // Guard
-                if factoryExecuted then invalidOp "Cannot call query factory after system factory is executed"
-
-                let query = queryFactory.CreateQuery<'q>()
-                let compTypes' = QueryArgument.ofShape shapeof<'q> |> QueryArgument.getCompTypes
-                compTypes.AddRange(compTypes')
-                query
-        }
-        let system = systemFactory.CreateSystem(queryFactory')
-        factoryExecuted <- true
-        let schedulerSystem =
-            let usingComponents = compTypes |> Seq.map (fun (compType, isMutable) -> { Type = compType; IsMutable = isMutable }) |> Seq.toList
-            { System = system
-              UsingComponents = Some usingComponents
-              GroupInfo = groupInfo }
-        schedulerSystem
-
-    member this.CreateGroup(name, threadingFactory: IServiceProvider -> Threading) =
-        let groupId = GroupId <| nextGroupId ()
-        fun sp -> { Id = groupId; Name = name; Threading = threadingFactory sp }
-
-    member this.AddSystem(groupInfoFactory: IServiceProvider -> GroupInfo, systemFactoryFactory: IServiceProvider -> IEcsSystemFactory): unit =
-        services
-            .AddSingleton<IEcsSystemFactory>(systemFactoryFactory)
-            .AddSingleton<SchedulerSystem>(fun services ->
-                let systemFactory = systemFactoryFactory services
-                let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
-                let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
-                schedulerSystem
-            )
-        |> ignore
-
-    member this.AddSystem(groupInfo: GroupInfo, systemFactoryFactory) = this.AddSystem((fun _ -> groupInfo), systemFactoryFactory)
-
-    [<RequiresExplicitTypeArguments>]
-    member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
-            (groupInfoFactory: IServiceProvider -> GroupInfo) =
-        services
-            .AddSingleton<'TSystemFactory>()
-            .AddSingleton<IEcsSystemFactory, 'TSystemFactory>()
-            .AddSingleton<SchedulerSystem>(fun services ->
-                let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
-                let systemFactory = services.GetRequiredService<'TSystemFactory>()
-                let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
-                schedulerSystem
-            )
-        |> ignore
-
-    member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
-        (groupInfo: GroupInfo) = this.AddSystem<'TSystemFactory>(fun _ -> groupInfo)
-
-    member this.AddTiming(groupInfoFactory: IServiceProvider -> GroupInfo, interval) =
-        services.AddSingleton<IntervalGroup>(fun services ->
-            let groupInfo = groupInfoFactory services
-            { GroupId = groupInfo.Id; IntervalMs = interval }
-        ) |> ignore
-
-    member this.AddSeeder(seedWorld) =
-        let seeder = { new IEcsWorldSeeder with member _.Seed(em) = seedWorld em }
-        services.AddSingleton<IEcsWorldSeeder>(seeder) |> ignore
+// type EcsSchedulerBuilder(services: IServiceCollection) =
+//
+//     let nextGroupId =
+//         let mutable lastGroupId = 0uL
+//         fun () ->
+//             let gid = lastGroupId
+//             lastGroupId <- lastGroupId + 1uL
+//             gid
+//
+//     let createSchedulerSystem (groupInfo: SystemLoop) (systemFactory: IEcsSystemFactory) (queryFactory: IEcsQueryFactory) : SchedulerSystem =
+//         let compTypes: ResizeArray<Type * bool> = ResizeArray()
+//         let mutable factoryExecuted = false
+//         let queryFactory' = { new IEcsQueryFactory with
+//             member _.CreateQuery<'q>() =
+//                 // Guard
+//                 if factoryExecuted then invalidOp "Cannot call query factory after system factory is executed"
+//
+//                 let query = queryFactory.CreateQuery<'q>()
+//                 let compTypes' = QueryArgument.ofShape shapeof<'q> |> QueryArgument.getCompTypes
+//                 compTypes.AddRange(compTypes')
+//                 query
+//         }
+//         let system = systemFactory.CreateSystem(queryFactory')
+//         factoryExecuted <- true
+//         let schedulerSystem =
+//             let usingComponents = compTypes |> Seq.map (fun (compType, isMutable) -> { Type = compType; IsMutable = isMutable }) |> Seq.toList
+//             let conflictSystems
+//             { System = system
+//               ConflictSystems = conflictSystems
+//               SystemLoop = groupInfo }
+//         schedulerSystem
+//
+//     member this.CreateGroup(name, threadingFactory: IServiceProvider -> Threading) =
+//         let groupId = SystemLoopId <| nextGroupId ()
+//         fun sp -> { Id = groupId; Name = name; Threading = threadingFactory sp }
+//
+//     member this.AddSystem(groupInfoFactory: IServiceProvider -> SystemLoop, systemFactoryFactory: IServiceProvider -> IEcsSystemFactory): unit =
+//         services
+//             .AddSingleton<IEcsSystemFactory>(systemFactoryFactory)
+//             .AddSingleton<SchedulerSystem>(fun services ->
+//                 let systemFactory = systemFactoryFactory services
+//                 let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
+//                 let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
+//                 schedulerSystem
+//             )
+//         |> ignore
+//
+//     member this.AddSystem(groupInfo: SystemLoop, systemFactoryFactory) = this.AddSystem((fun _ -> groupInfo), systemFactoryFactory)
+//
+//     [<RequiresExplicitTypeArguments>]
+//     member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
+//             (groupInfoFactory: IServiceProvider -> SystemLoop) =
+//         services
+//             .AddSingleton<'TSystemFactory>()
+//             .AddSingleton<IEcsSystemFactory, 'TSystemFactory>()
+//             .AddSingleton<SchedulerSystem>(fun services ->
+//                 let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
+//                 let systemFactory = services.GetRequiredService<'TSystemFactory>()
+//                 let schedulerSystem = createSchedulerSystem (groupInfoFactory services) systemFactory queryFactory
+//                 schedulerSystem
+//             )
+//         |> ignore
+//
+//     member this.AddSystem<'TSystemFactory when 'TSystemFactory :> IEcsSystemFactory and 'TSystemFactory : not struct>
+//         (groupInfo: SystemLoop) = this.AddSystem<'TSystemFactory>(fun _ -> groupInfo)
+//
+//     member this.AddTiming(groupInfoFactory: IServiceProvider -> SystemLoop, interval) =
+//         services.AddSingleton<IntervalGroup>(fun services ->
+//             let groupInfo = groupInfoFactory services
+//             { GroupId = groupInfo.Id; IntervalMs = interval }
+//         ) |> ignore
+//
+//     member this.AddSeeder(seedWorld) =
+//         let seeder = { new IEcsWorldSeeder with member _.Seed(em) = seedWorld em }
+//         services.AddSingleton<IEcsWorldSeeder>(seeder) |> ignore
 
 
 [<AutoOpen>]
 module EcsServiceCollectionExtensions =
 
-    type IServiceCollection with
-        member this.AddEcs(configureEcs: EcsSchedulerBuilder -> unit) =
-            this.AddSingleton<IEcsQueryFactory, CompiledEcsQueryFactory>(fun services ->
-                CompiledEcsQueryFactory()
-            ) |> ignore
-            this.AddSingleton<TimedScheduler>() |> ignore
-            this.AddSingleton<SystemGroupUpdater>() |> ignore
+    open Ehingeeinae.Ecs.Scheduling.SystemChainBuilding
 
+    // type IServiceCollection with
+    //     member this.AddEcs(configureEcs: EcsSchedulerBuilder -> unit) =
+    //         this.AddSingleton<IEcsQueryFactory, CompiledEcsQueryFactory>(fun services ->
+    //             CompiledEcsQueryFactory()
+    //         ) |> ignore
+    //         this.AddSingleton<TimedScheduler>() |> ignore
+    //         this.AddSingleton<SystemLoopUpdater>() |> ignore
+    //
+    //         this
+    //             .AddSingleton<_, _>(fun _ -> EcsWorld.createEmpty ())
+    //             .AddSingleton<IEcsWorldEntityManager, EcsWorldEntityManager>()
+    //             .AddSingleton<EcsWorldQueryExecutor>()
+    //         |> ignore
+    //
+    //         let ecsBuilder = EcsSchedulerBuilder(this)
+    //         configureEcs ecsBuilder
+    //
+    //         this.AddHostedService<EcsHostedService>() |> ignore
+    //
+    //         this
+
+    type IServiceCollection with
+        member this.AddSystemChain(configure: IServiceProvider -> SystemChainBuilder -> unit) =
             this
                 .AddSingleton<_, _>(fun _ -> EcsWorld.createEmpty ())
                 .AddSingleton<IEcsWorldEntityManager, EcsWorldEntityManager>()
                 .AddSingleton<EcsWorldQueryExecutor>()
             |> ignore
-
-            let ecsBuilder = EcsSchedulerBuilder(this)
-            configureEcs ecsBuilder
-
-            this.AddHostedService<EcsHostedService>() |> ignore
-
-            this
+            this.AddSingleton<IEcsQueryFactory, CompiledEcsQueryFactory>(fun _ -> CompiledEcsQueryFactory()) |> ignore
+            this.AddSingleton<SystemChain, SystemChain>(fun services ->
+                let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
+                let builder = SystemChainBuilder(queryFactory)
+                configure services builder
+                let chain = builder.Build()
+                chain
+            ) |> ignore
+            this.AddSingleton<TimedScheduler>() |> ignore
+            this.AddSingleton<SystemLoopUpdater>() |> ignore
+            this.AddHostedService<EcsHostedService>()
 
 (*
 

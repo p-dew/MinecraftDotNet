@@ -15,7 +15,8 @@
         <Compile Include="Querying\Filtering.fs" />
         <Compile Include="Querying\Executing.fs" />
         <Compile Include="Systems.fs" />
-        <Compile Include="Scheduling.fs" />
+        <Compile Include="Scheduling\Scheduling.fs" />
+        <Compile Include="Scheduling\SystemChainBuilding.fs" />
         <Compile Include="Hosting.fs" />
         <Compile Include="Resources\Resources.fs" />
         <Compile Include="ServiceProviding.fs" />
