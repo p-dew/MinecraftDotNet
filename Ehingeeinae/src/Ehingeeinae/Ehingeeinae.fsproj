@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <Description>
+            Meta project for Ehingeeinae engine
+        </Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Ehingeeinae.AssetManagement\Ehingeeinae.AssetManagement.fsproj" />
+      <ProjectReference Include="..\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
+      <ProjectReference Include="..\Ehingeeinae.Graphics\Ehingeeinae.Graphics.fsproj" />
+      <ProjectReference Include="..\Ehingeeinae.Utils\Ehingeeinae.Utils.fsproj" />
+    </ItemGroup>
+
+</Project>

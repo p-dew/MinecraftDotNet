@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Ehingeeinae\Ehingeeinae.fsproj" />
+      <ProjectReference Include="..\..\Ehingeeinae\src\Ehingeeinae\Ehingeeinae.fsproj" />
     </ItemGroup>
 
 </Project>
