@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.Runtime.CompilerServices
 
+open Ehingeeinae.Ecs.Querying.RuntimeCompilation
 open TypeShape.Core
 
 open Ehingeeinae.Ecs.Querying

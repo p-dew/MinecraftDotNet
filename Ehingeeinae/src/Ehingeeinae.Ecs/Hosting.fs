@@ -125,6 +125,7 @@ type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler,
 [<AutoOpen>]
 module EcsServiceCollectionExtensions =
 
+    open Ehingeeinae.Ecs.Querying.RuntimeCompilation
     open Ehingeeinae.Ecs.Scheduling.SystemChainBuilding
 
     // type IServiceCollection with

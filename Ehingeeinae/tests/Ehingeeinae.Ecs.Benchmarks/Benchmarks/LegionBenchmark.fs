@@ -2,6 +2,7 @@ module Ehingeeinae.Ecs.Benchmarks.Benchmarks.LegionBench
 
 open BenchmarkDotNet.Attributes
 open Ehingeeinae.Ecs.Querying
+open Ehingeeinae.Ecs.Querying.RuntimeCompilation
 open Ehingeeinae.Ecs.Worlds
 open Microsoft.Extensions.Logging.Abstractions
 

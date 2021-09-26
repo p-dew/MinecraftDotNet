@@ -5,6 +5,7 @@ open BenchmarkDotNet
 open BenchmarkDotNet.Engines
 open BenchmarkDotNet.Attributes
 open Ehingeeinae.Ecs.Querying
+open Ehingeeinae.Ecs.Querying.RuntimeCompilation
 open Ehingeeinae.Ecs.Worlds
 open Ehingeeinae.Ecs.Benchmarks
 open Microsoft.Extensions.Logging.Abstractions
