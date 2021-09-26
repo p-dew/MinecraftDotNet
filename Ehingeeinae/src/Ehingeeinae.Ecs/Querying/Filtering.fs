@@ -7,8 +7,8 @@ open Ehingeeinae.Ecs.Worlds
 [<Struct>]
 type EcsQueryFilter = EcsQueryFilter of (EcsArchetype -> bool)
 with
-    static member ( + ) (EcsQueryFilter f1, EcsQueryFilter f2) = EcsQueryFilter (fun a -> (* f1 a || f2 a *) if f1 a then true else f2 a)
-    static member ( * ) (EcsQueryFilter f1, EcsQueryFilter f2) = EcsQueryFilter (fun a -> (* f1 a && f2 a *) if f1 a then f2 a else false)
+    static member ( + ) (EcsQueryFilter f1, EcsQueryFilter f2) = EcsQueryFilter (fun a -> f1 a || f2 a)
+    static member ( * ) (EcsQueryFilter f1, EcsQueryFilter f2) = EcsQueryFilter (fun a -> f1 a && f2 a)
     static member (~- ) (EcsQueryFilter f) = EcsQueryFilter (fun a -> not (f a))
     static member ( <|> ) (EcsQueryFilter f1, EcsQueryFilter f2) = EcsQueryFilter (fun a -> f1 a <> f2 a)
 
@@ -29,6 +29,5 @@ module EcsQueryFilterExtensions =
             { new IEcsQuery<'q> with
                 member _.Fetch(storage) = q.Fetch(storage)
                 member _.Filter(archetype) =
-                    // q.Filter(archetype) && filter archetype
-                    if q.Filter(archetype) then filter archetype else false
+                    q.Filter(archetype) && filter archetype
             }
