@@ -23,12 +23,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-      <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+        <PackageReference Include="ObjectTK.NetStandard" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Ehingeeinae\src\Ehingeeinae\Ehingeeinae.fsproj" />
+        <ProjectReference Include="..\..\Ehingeeinae\src\Ehingeeinae\Ehingeeinae.fsproj" />
     </ItemGroup>
 
 </Project>

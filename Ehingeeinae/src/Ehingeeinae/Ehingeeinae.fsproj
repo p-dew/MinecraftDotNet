@@ -9,10 +9,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Ehingeeinae.AssetManagement\Ehingeeinae.AssetManagement.fsproj" />
-      <ProjectReference Include="..\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
-      <ProjectReference Include="..\Ehingeeinae.Graphics\Ehingeeinae.Graphics.fsproj" />
-      <ProjectReference Include="..\Ehingeeinae.Utils\Ehingeeinae.Utils.fsproj" />
+        <ProjectReference Include="..\Ehingeeinae.AssetManagement\Ehingeeinae.AssetManagement.fsproj" />
+        <ProjectReference Include="..\Ehingeeinae.Ecs\Ehingeeinae.Ecs.fsproj" />
+        <ProjectReference Include="..\Ehingeeinae.Graphics\Ehingeeinae.Graphics.fsproj" />
+        <ProjectReference Include="..\Ehingeeinae.Utils\Ehingeeinae.Utils.fsproj" />
     </ItemGroup>
 
 </Project>
