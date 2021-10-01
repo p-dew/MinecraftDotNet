@@ -190,7 +190,7 @@ let createHostBuilder args =
         )
         .ConfigureServices(fun services ->
             services.AddSingleton<IEcsWorldSeeder>({ new IEcsWorldSeeder with member _.Seed(w) = seedWorld w }) |> ignore
-            services.AddSystemChain(buildSystemChain) |> ignore
+            services.AddEcs(buildSystemChain) |> ignore
             services.AddGraphics(
                 GameWindowSettings(RenderFrequency=5., UpdateFrequency=0.),
                 NativeWindowSettings(Title="Playground", Size=Vector2i(1280, 720), Profile=ContextProfile.Compatability)

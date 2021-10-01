@@ -2,12 +2,14 @@ module Ehingeeinae.Ecs.Scheduling.SystemChainBuilding
 
 open System
 open System.Collections.Generic
+open System.ComponentModel.Design
 open System.Runtime.CompilerServices
 
 open Ehingeeinae.Ecs.Querying.RuntimeCompilation
 open TypeShape.Core
 
 open Ehingeeinae.Ecs.Querying
+open Ehingeeinae.Ecs.Resources
 open Ehingeeinae.Ecs.Systems
 open Ehingeeinae.Ecs.Utils
 
@@ -22,20 +24,27 @@ module SystemChain =
     let () = ()
 
 
+type EcsSystemFactoryContext =
+    { Queries: IEcsQueryFactory
+      Resources: IEcsResourceProvider }
+
 type IEcsSystemFactory =
-    abstract CreateSystem: queryFactory: IEcsQueryFactory -> IEcsSystem
+    abstract CreateSystem: context: EcsSystemFactoryContext -> IEcsSystem
 
 module EcsSystemFactory =
     let inline create createSystem = { new IEcsSystemFactory with member _.CreateSystem(qf) = createSystem qf }
 
-type SystemComponent = { Type: Type; IsUnique: bool }
+type BuildingSystemComponent = { Type: Type; IsUnique: bool }
+
+type BuildingSystemResource = { Type: Type; IsUnique: bool }
 
 type BuildingChainedSystem =
-    { UsingComponents: SystemComponent seq
+    { UsingComponents: BuildingSystemComponent seq
+      UsingResources: BuildingSystemResource seq
       ChainedSystem: ChainedSystem }
 
 module SystemConflict =
-    let isConflictingCompTypes (comps1: SystemComponent seq) (comps2: SystemComponent seq) : bool =
+    let isConflictingCompTypes (comps1: BuildingSystemComponent seq) (comps2: BuildingSystemComponent seq) : bool =
         Seq.allPairs comps1 comps2
         |> Seq.exists ^fun (c1, c2) ->
             let anyIsUnique = c1.IsUnique || c2.IsUnique
@@ -43,6 +52,7 @@ module SystemConflict =
 
     let ofBuildingSystems (buildingSystems: BuildingChainedSystem seq) : SystemConflict list =
         // TODO: Remove this ugly hack with duplicates
+        // TODO: Add resources in conflict count
         [
             for bsys1 in buildingSystems do
                 for bsys2 in buildingSystems do
@@ -53,7 +63,7 @@ module SystemConflict =
         ]
 
 
-type SystemChainBuilder(queryFactory: IEcsQueryFactory) =
+type SystemChainBuilder(queryFactory: IEcsQueryFactory, resourceProvider: IEcsResourceProvider) =
 
     let buildingSystems = ResizeArray<BuildingChainedSystem>()
     let manualConflicts = ResizeArray<IEcsSystem array>()
@@ -68,9 +78,10 @@ type SystemChainBuilder(queryFactory: IEcsQueryFactory) =
         let lid = SystemLoopId (nextLoopId ())
         { Id = lid; Timing = timing; Executor = executor }
 
-    member this.AddSystem(systemFactory: IEcsSystemFactory, loop: SystemLoop) =
+    member this.AddSystem(loop: SystemLoop, systemFactory: IEcsSystemFactory) =
         let mutable systemFactoryExecuted = false
-        let usingComponents = ResizeArray()
+
+        let usingComponents = ResizeArray<Type * bool>()
         let writingQueryFactory =
             { new IEcsQueryFactory with
                 member _.CreateQuery<'q>() =
@@ -82,14 +93,31 @@ type SystemChainBuilder(queryFactory: IEcsQueryFactory) =
                     query
             }
 
-        let system = systemFactory.CreateSystem(writingQueryFactory)
+        let usingResources = ResizeArray<Type * bool>()
+        let writingResourceProvider =
+            { new IEcsResourceProvider with
+                member _.GetShared<'T>() =
+                    if systemFactoryExecuted then invalidOp "Cannot call resource provider after system factory is executed"
+                    usingResources.Add(typeof<'T>, false)
+                    resourceProvider.GetShared<'T>()
+                member _.GetUnique<'T>() =
+                    if systemFactoryExecuted then invalidOp "Cannot call resource provider after system factory is executed"
+                    usingResources.Add(typeof<'T>, true)
+                    resourceProvider.GetUnique<'T>()
+            }
+
+        let system =
+            let factoryContext = { Queries = writingQueryFactory; Resources = writingResourceProvider }
+            systemFactory.CreateSystem(factoryContext)
         systemFactoryExecuted <- true
 
         let buildingSystem =
             let chainedSystem = { System = system; Loop = loop }
-            let usingComponents = usingComponents |> Seq.map (fun (ty, uq) -> { Type = ty; IsUnique = uq })
+            let usingComponents: BuildingSystemComponent seq = usingComponents |> Seq.map (fun (ty, uq) -> { Type = ty; IsUnique = uq })
+            let usingResources: BuildingSystemResource seq = usingResources |> Seq.map (fun (ty, uq) -> { Type = ty; IsUnique = uq })
             { ChainedSystem = chainedSystem
-              UsingComponents = usingComponents }
+              UsingComponents = usingComponents
+              UsingResources = usingResources }
         buildingSystems.Add(buildingSystem)
 
         this
@@ -110,6 +138,6 @@ type SystemChainBuilder(queryFactory: IEcsQueryFactory) =
 [<AutoOpen>]
 module Extensions =
     type SystemChainBuilder with
-        member this.AddSystem(systemFactory: IEcsQueryFactory -> IEcsSystem, loop: SystemLoop) =
-            let systemFactory = { new IEcsSystemFactory with member _.CreateSystem(qf) = systemFactory qf }
-            this.AddSystem(systemFactory, loop)
+        member this.AddSystem(loop: SystemLoop, systemFactory: EcsSystemFactoryContext -> #IEcsSystem) =
+            let systemFactory = { new IEcsSystemFactory with member _.CreateSystem(ctx) = upcast systemFactory ctx }
+            this.AddSystem(loop, systemFactory)

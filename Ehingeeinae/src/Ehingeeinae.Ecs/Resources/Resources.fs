@@ -23,24 +23,32 @@ type ResourceStorage() =
         match resources.TryGetValue(typeof<'T>) with
         | true, r -> unbox r
         | false, _ ->
-            let resource = ref Unchecked.defaultof<'T>
-            resources.[typeof<'T>] <- resource
-            resource
+            let resourceRef = ref Unchecked.defaultof<'T>
+            resources.[typeof<'T>] <- resourceRef
+            resourceRef
 
     [<RequiresExplicitTypeArguments>]
     member this.GetShared<'T>() =
-        let resource = this.GetResourceRef<'T>()
-        { new IEcsSharedResource<'T> with member _.Value = resource.Value }
+        let resourceRef = this.GetResourceRef<'T>()
+        { new IEcsSharedResource<'T> with member _.Value = resourceRef.Value }
 
     [<RequiresExplicitTypeArguments>]
     member this.GetUnique<'T>() =
-        let resource = this.GetResourceRef<'T>()
+        let resourceRef = this.GetResourceRef<'T>()
         { new IEcsUniqueResource<'T> with
             member _.Value
-                with get() = resource.Value
-                and set(x) = resource.Value <- x
+                with get() = resourceRef.Value
+                and set(x) = resourceRef.Value <- x
         }
 
     interface IEcsResourceProvider with
         member this.GetShared<'T>() = this.GetShared<'T>()
         member this.GetUnique<'T>() = this.GetUnique<'T>()
+
+[<AutoOpen>]
+module ResourceProviderExtensions =
+    type IEcsResourceProvider with
+        [<RequiresExplicitTypeArguments>]
+        member this.RegisterResource<'T>(initialValue: 'T) =
+            let resource = this.GetUnique<'T>()
+            resource.Value <- initialValue
