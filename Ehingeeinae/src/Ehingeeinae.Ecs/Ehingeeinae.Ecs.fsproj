@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <Compile Include="Utils.fs" />
+        <Compile Include="QuotationExtensions.fs" />
         <Compile Include="Core.fs" />
         <Compile Include="Worlds.fs" />
         <Compile Include="Querying\Querying.fs" />
@@ -20,6 +21,12 @@
         <Compile Include="Scheduling\Scheduling.fs" />
         <Compile Include="Scheduling\SystemChainBuilding.fs" />
         <Compile Include="Hosting.fs" />
+        <Compile Include="Experimental\Storage\Component.fs" />
+        <Compile Include="Experimental\Storage\EntityId.fs" />
+        <Compile Include="Experimental\Storage\Archetype.fs" />
+        <Compile Include="Experimental\Storage\Column.fs" />
+        <Compile Include="Experimental\Storage\Table.fs" />
+        <Compile Include="Experimental\Storage\Storage.fs" />
     </ItemGroup>
 
     <ItemGroup>
