@@ -11,9 +11,10 @@ open OpenTK.Windowing.GraphicsLibraryFramework
 type PlayerControlSystem
     (
         inputStateResource: IEcsSharedResource<InputState>,
-        q: IEcsQuery<struct(Player cread * Velocity cwrite)>,
+        q: IEcsQuery<(Player cread * Velocity cwrite)>,
         queryExecutor: EcsWorldQueryExecutor
     ) =
+    let speed = 2.f
     interface IEcsSystem with
         member this.Update(ctx) =
             let r = queryExecutor.ExecuteQuery(q)
@@ -21,11 +22,11 @@ type PlayerControlSystem
             for _, velocityComp in r do
                 let mutable v = Vector2.Zero
                 if inputState.KeyboardState.IsKeyDown(Keys.Up) then
-                    v <- v + Vector2.UnitY
+                    v <- v + Vector2.UnitY * speed
                 if inputState.KeyboardState.IsKeyDown(Keys.Down) then
-                    v <- v - Vector2.UnitY
-                if inputState.KeyboardState.IsKeyDown(Keys.Left) then
-                    v <- v + Vector2.UnitX
+                    v <- v - Vector2.UnitY * speed
                 if inputState.KeyboardState.IsKeyDown(Keys.Right) then
-                    v <- v - Vector2.UnitX
+                    v <- v + Vector2.UnitX * speed
+                if inputState.KeyboardState.IsKeyDown(Keys.Left) then
+                    v <- v - Vector2.UnitX * speed
                 velocityComp.Value <- { dx = v.X; dy = v.Y }

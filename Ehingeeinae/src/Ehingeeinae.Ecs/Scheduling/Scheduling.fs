@@ -6,32 +6,10 @@ open System.Diagnostics
 open System.Threading
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Systems
+open Microsoft.Extensions.Logging
+
 
 // ----
-
-
-(*
-
-let l1 = SystemLoop.create ()
-let l2 = SystemLoop.create ()
-let systems =
-    SystemChain.ofSystems [
-        s1, l1
-        s2, l2
-        s3, l1
-        s4, l2
-    ]
-    |> SystemChain.withConflicts [
-        [ s1; s2; s3 ]
-        [ s1; s4 ]
-    ]
-    |> resolveQueries
-    |> resolveFoo
-
-
-
-*)
-
 
 type SystemLoopId = SystemLoopId of uint64
 
@@ -40,7 +18,7 @@ type ISystemExecutor =
 
 type SystemLoop =
     { Id: SystemLoopId
-      Timing: float32
+      IntervalInSeconds: float32
       Executor: ISystemExecutor }
 
 type ChainedSystem =
@@ -137,7 +115,7 @@ module Disposable =
         for disposable in disposables do
             disposable.Dispose()
 
-type SystemLoopUpdater(chain: SystemChain) =
+type SystemLoopUpdater(chain: SystemChain, logger: ILogger<SystemLoopUpdater>) =
 
     let systems = chain.Systems |> Seq.toArray
     let conflicts = chain.Conflicts |> Seq.map (fun c -> Seq.cache c.ConflictingSystems) |> Seq.cache
@@ -165,6 +143,7 @@ type SystemLoopUpdater(chain: SystemChain) =
                     let system = systemBatch.[i]
                     let executor = system.Loop.Executor
                     let wh = executor.StartExecuteSystem(system.System)
+                    logger.LogTrace($"Start update {system.System.GetType().Name}")
                     wh
             WaitHandle.WaitAll(systemWaitHandles) |> ignore
             systemWaitHandles |> Disposable.disposeAll
@@ -184,7 +163,7 @@ type TimedScheduler(updater: SystemLoopUpdater, chain: SystemChain) =
 
         let intervals =
             chain.Systems
-            |> Seq.map ^fun s -> { LoopId = s.Loop.Id; IntervalMs = s.Loop.Timing; LastUpdateMs = 0.f }
+            |> Seq.map ^fun s -> { LoopId = s.Loop.Id; IntervalMs = s.Loop.IntervalInSeconds * 1000.f; LastUpdateMs = 0.f }
             |> Seq.toArray
         let shouldUpdate = ResizeArray(intervals.Length)
 

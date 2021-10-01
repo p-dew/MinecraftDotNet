@@ -6,12 +6,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Content Include="appsettings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
         <Compile Include="Components\Components.fs" />
         <Compile Include="Systems\RenderTimingSystem.fs" />
         <Compile Include="Systems\InputSystem.fs" />
         <Compile Include="Systems\LoseSystem.fs" />
         <Compile Include="Systems\PlayerControlSystem.fs" />
         <Compile Include="Systems\RenderSystem.fs" />
+        <Compile Include="Systems\PhysicsSystem.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

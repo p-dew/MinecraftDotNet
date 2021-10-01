@@ -50,6 +50,12 @@ module SystemConflict =
             let anyIsUnique = c1.IsUnique || c2.IsUnique
             c1.Type = c2.Type && anyIsUnique
 
+    let isConflictingResourcesTypes (ress1: BuildingSystemResource seq) (ress2: BuildingSystemResource seq) : bool =
+        Seq.allPairs ress1 ress2
+        |> Seq.exists ^fun (r1, r2) ->
+            let anyIsUnique = r1.IsUnique || r2.IsUnique
+            r1.Type = r2.Type && anyIsUnique
+
     let ofBuildingSystems (buildingSystems: BuildingChainedSystem seq) : SystemConflict list =
         // TODO: Remove this ugly hack with duplicates
         // TODO: Add resources in conflict count
@@ -57,8 +63,9 @@ module SystemConflict =
             for bsys1 in buildingSystems do
                 for bsys2 in buildingSystems do
                     if bsys1 <> bsys2 then
-                        let conflicts = isConflictingCompTypes bsys1.UsingComponents bsys2.UsingComponents
-                        if conflicts then
+                        let compConflicts = isConflictingCompTypes bsys1.UsingComponents bsys2.UsingComponents
+                        let resConflicts = isConflictingResourcesTypes bsys1.UsingResources bsys2.UsingResources
+                        if compConflicts || resConflicts then
                             yield { ConflictingSystems = [ bsys1.ChainedSystem.System; bsys2.ChainedSystem.System ] }
         ]
 
@@ -74,9 +81,9 @@ type SystemChainBuilder(queryFactory: IEcsQueryFactory, resourceProvider: IEcsRe
             lastLoopId <- lastLoopId + 1UL
             lastLoopId
 
-    member this.CreateLoop(timing, executor): SystemLoop =
+    member this.CreateLoop(interval, executor): SystemLoop =
         let lid = SystemLoopId (nextLoopId ())
-        { Id = lid; Timing = timing; Executor = executor }
+        { Id = lid; IntervalInSeconds = interval; Executor = executor }
 
     member this.AddSystem(loop: SystemLoop, systemFactory: IEcsSystemFactory) =
         let mutable systemFactoryExecuted = false

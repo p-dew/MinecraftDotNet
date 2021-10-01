@@ -1,4 +1,4 @@
-module Ehingeeinae.Playground.ExprToCode
+module ExprToCode
 
 open System
 open System.Text

@@ -225,12 +225,12 @@ module EcsQueryCreating =
                 let storageVar = Var("storage", typeof<ArchetypeStorage>)
                 Expr.Lambda(
                     storageVar,
-                    let storage = Expr.Var(storageVar)
+                    let storageArgExpr = Expr.Var(storageVar)
                     Expr.letMany [
                         for idxItem in 0 .. itemCount - 1 do
                             let itemFStorageIdxVar = itemsFStorageIdxVars.[idxItem]
                             let itemFIdxVar = itemsFIdxVars.[idxItem]
-                            itemFIdxVar, Expr.Application(Expr.Var(itemFStorageIdxVar), storage)
+                            itemFIdxVar, Expr.Application(Expr.Var(itemFStorageIdxVar), storageArgExpr)
                     ] (fun _ ->
                         let idxEntityVar = Var("idxEntity", typeof<int>)
                         Expr.Lambda(
@@ -276,6 +276,8 @@ module EcsQueryCreating =
         *)
 
         // printfn $"fetchExpr:\n%A{fetchExpr}"
+
+        printfn $"fetchExpr:\n<<<<\n{ExprToCode.ExprDisplay.display fetchExpr}\n>>>>"
 
         let fetch: ArchetypeStorage -> int -> 'q =
             // downcast (fetchExpr |> FSharp.Linq.RuntimeHelpers.LeafExpressionConverter.EvaluateQuotation)
@@ -355,12 +357,13 @@ module EcsQueryCreating =
             mkQueryTupleOrRecord shapeRecord.Fields (fun items -> Expr.NewRecord(typeof<'q>, items))
         // Tuple
         | Shape.Tuple (:? ShapeTuple<'q> as shapeTuple) ->
-            mkQueryTupleOrRecord shapeTuple.Elements (fun items ->
+            let createFromItems =
                 if shapeTuple.IsStructTuple then
-                    Expr.NewStructTuple(typeof<ValueTuple<_>>.Assembly, items)
+                    fun items -> Expr.NewStructTuple(typeof<ValueTuple<_>>.Assembly, items)
                 else
-                    Expr.NewTuple(items)
-            )
+                    fun items -> Expr.NewTuple(items)
+            mkQueryTupleOrRecord shapeTuple.Elements createFromItems
+
         // Other types
         | _ ->
             raise ^ NotSupportedException($"Type {typeof<'q>} is not supported")

@@ -6,7 +6,7 @@ open Ehingeeinae.Ecs.Systems
 
 
 type LogicTimingState =
-    { DeltaTimeMs: float32 }
+    { DeltaTime: float32 }
 
 type LogicTimingSystem(timings: IEcsUniqueResource<LogicTimingState>) =
     let stopwatch = Stopwatch()
@@ -14,13 +14,13 @@ type LogicTimingSystem(timings: IEcsUniqueResource<LogicTimingState>) =
     interface IEcsSystem with
         member this.Update(ctx) =
             if not started then stopwatch.Start(); started <- true
-            let elapsedMs = stopwatch.Elapsed.TotalMilliseconds
+            let elapsedSeconds = stopwatch.Elapsed.TotalSeconds
             stopwatch.Restart()
-            timings.Value <- { timings.Value with DeltaTimeMs = float32 elapsedMs }
+            timings.Value <- { timings.Value with DeltaTime = float32 elapsedSeconds }
 
 
 type RenderTimingState =
-    { DeltaTimeMs: float32 }
+    { DeltaTime: float32 }
 
 type RenderTimingSystem(timings: IEcsUniqueResource<RenderTimingState>) =
     let stopwatch = Stopwatch()
@@ -28,6 +28,6 @@ type RenderTimingSystem(timings: IEcsUniqueResource<RenderTimingState>) =
     interface IEcsSystem with
         member this.Update(ctx) =
             if not started then stopwatch.Start(); started <- true
-            let elapsedMs = stopwatch.Elapsed.TotalMilliseconds
+            let elapsedSeconds = stopwatch.Elapsed.TotalSeconds
             stopwatch.Restart()
-            timings.Value <- { timings.Value with DeltaTimeMs = float32 elapsedMs }
+            timings.Value <- { timings.Value with DeltaTime = float32 elapsedSeconds }

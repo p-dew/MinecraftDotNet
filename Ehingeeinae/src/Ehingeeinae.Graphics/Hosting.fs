@@ -40,7 +40,7 @@ type CommandQueueGameWindow(settings: GameWindowSettings, nativeSettings: Native
 
     override this.OnRenderFrame(args) =
         setFpsTitle ()
-        ()
+        base.OnRenderFrame(args)
 
     override this.OnUpdateFrame(args) =
         // GL.Clear(ClearBufferMask.ColorBufferBit)
@@ -104,6 +104,7 @@ module ServiceCollectionExtensions =
 
             this
                 .AddSingleton<CommandQueueGameWindow>()
+                .AddSingleton<NativeWindow, CommandQueueGameWindow>(fun sp -> sp.GetRequiredService<CommandQueueGameWindow>())
                 .AddSingleton<IGraphicsCommandSender, CommandQueueGameWindow>(fun sp -> sp.GetRequiredService<CommandQueueGameWindow>())
             |> ignore
 

@@ -5,6 +5,7 @@ open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open Ehingeeinae.Ecs.Querying
+open Ehingeeinae.Ecs.Resources
 open Ehingeeinae.Ecs.Scheduling
 open Ehingeeinae.Ecs.Scheduling.SystemChainBuilding
 open Ehingeeinae.Ecs.Systems
@@ -45,15 +46,18 @@ type EcsHostedService(logger: ILogger<EcsHostedService>, runner: TimedScheduler,
             schedulerCts.Cancel()
             Task.CompletedTask
 
+type EcsResourceRegistrationBuilder(resourceProvider: IEcsResourceProvider) =
+    member this.Register<'T>(initialValue: 'T): unit =
+        resourceProvider.RegisterResource<'T>(initialValue)
 
 type EcsConfigurationContext =
-    { SystemChain: SystemChainBuilder }
+    { SystemChain: SystemChainBuilder
+      Resources: EcsResourceRegistrationBuilder }
 
 [<AutoOpen>]
 module EcsServiceCollectionExtensions =
 
     open Ehingeeinae.Ecs.Querying.RuntimeCompilation
-    open Ehingeeinae.Ecs.Resources
 
     type IServiceCollection with
         member this.AddEcs(configureEcs: IServiceProvider -> EcsConfigurationContext -> unit) =
@@ -67,12 +71,14 @@ module EcsServiceCollectionExtensions =
             this.AddSingleton<IEcsResourceProvider, ResourceStorage>(fun _ -> ResourceStorage()) |> ignore
 
             this.AddSingleton<SystemChain, SystemChain>(fun services ->
+                let resourceProvider = services.GetRequiredService<IEcsResourceProvider>()
                 let systemChainBuilder =
                     let queryFactory = services.GetRequiredService<IEcsQueryFactory>()
-                    let resourceProvider = services.GetRequiredService<IEcsResourceProvider>()
                     SystemChainBuilder(queryFactory, resourceProvider)
+                let resourceRegistrationBuilder = EcsResourceRegistrationBuilder(resourceProvider)
                 let context =
-                    { SystemChain = systemChainBuilder }
+                    { SystemChain = systemChainBuilder
+                      Resources = resourceRegistrationBuilder }
                 configureEcs services context
                 let chain = systemChainBuilder.Build()
                 chain
