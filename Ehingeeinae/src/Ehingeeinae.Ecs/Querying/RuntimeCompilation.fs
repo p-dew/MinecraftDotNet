@@ -7,6 +7,7 @@ open TypeShape.Core
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
 open Ehingeeinae.Ecs.Querying
+open Ehingeeinae.Ecs.QuotationExtensions
 
 // --------
 // Component Shaping
@@ -43,30 +44,6 @@ module Shape =
         | _ when (match shape with :? TypeShape<EcsEntityId> -> true | _ -> false) ->
             EcsEntityId
         | _ -> NotEcs
-
-
-[<RequireQualifiedAccess>]
-module Expr =
-
-    open FSharp.Quotations
-
-    let lambdaMany (parameters: Var list) (body: Expr) : Expr =
-        let rec foo parameters =
-            match parameters with
-            | [] -> invalidOp ""
-            | parameter :: ((_ :: _) as tail) ->
-                Expr.Lambda(parameter, foo tail)
-            | [parameter] -> Expr.Lambda(parameter, body)
-        foo parameters
-
-    let letMany (vars: (Var * Expr) list) (body: Expr) : Expr =
-        let rec foo vars =
-            match vars with
-            | [] -> invalidOp ""
-            | [(var, value)] -> Expr.Let(var, value, body)
-            | (var, value) :: tail ->
-                Expr.Let(var, value, foo tail)
-        foo vars
 
 
 [<RequireQualifiedAccess>]
@@ -243,7 +220,7 @@ module EcsQueryCreating =
             let itemsFStorageIdxVars = [| for idxItem in 0 .. itemCount - 1 -> Var($"itemFStorageIdx{idxItem}", itemsFStorageIdx.[idxItem].Type) |]
             Expr.letMany [
                 yield! Array.zip itemsFStorageIdxVars itemsFStorageIdx
-            ] (
+            ] (fun _ ->
                 let itemsFIdxVars = [| for idxItem in 0 ..itemCount - 1 -> Var($"itemFIdx{idxItem}", itemsFStorageIdx.[idxItem].Type.GetGenericArguments().[1]) |]
                 let storageVar = Var("storage", typeof<ArchetypeStorage>)
                 Expr.Lambda(
@@ -254,7 +231,7 @@ module EcsQueryCreating =
                             let itemFStorageIdxVar = itemsFStorageIdxVars.[idxItem]
                             let itemFIdxVar = itemsFIdxVars.[idxItem]
                             itemFIdxVar, Expr.Application(Expr.Var(itemFStorageIdxVar), storage)
-                    ] (
+                    ] (fun _ ->
                         let idxEntityVar = Var("idxEntity", typeof<int>)
                         Expr.Lambda(
                             idxEntityVar,
