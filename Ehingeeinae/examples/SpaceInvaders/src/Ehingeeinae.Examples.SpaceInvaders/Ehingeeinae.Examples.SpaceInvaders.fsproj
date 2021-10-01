@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Components\Components.fs" />
+        <Compile Include="Systems\RenderTimingSystem.fs" />
+        <Compile Include="Systems\InputSystem.fs" />
+        <Compile Include="Systems\LoseSystem.fs" />
+        <Compile Include="Systems\PlayerControlSystem.fs" />
+        <Compile Include="Systems\RenderSystem.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\..\src\Ehingeeinae\Ehingeeinae.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    </ItemGroup>
+
+</Project>
