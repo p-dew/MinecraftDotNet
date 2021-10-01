@@ -30,6 +30,13 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ehingeeinae", "Ehingeeinae\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{B6FEC11D-F20A-4156-A009-FD29940E77AE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SpaceInvaders", "SpaceInvaders", "{40137D0C-E1E6-4D3B-B810-3A3F93B236F1}"
+ProjectSection(SolutionItems) = preProject
+	Ehingeeinae\examples\SpaceInvaders\README.md = Ehingeeinae\examples\SpaceInvaders\README.md
+EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ehingeeinae.Examples.SpaceInvaders", "Ehingeeinae\examples\SpaceInvaders\src\Ehingeeinae.Examples.SpaceInvaders\Ehingeeinae.Examples.SpaceInvaders.fsproj", "{38895F73-CF18-4255-8B6C-CE9B6A9C9956}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +83,10 @@ Global
 		{9F7367C0-5702-480F-89A8-F9D9F6350734}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F7367C0-5702-480F-89A8-F9D9F6350734}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F7367C0-5702-480F-89A8-F9D9F6350734}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38895F73-CF18-4255-8B6C-CE9B6A9C9956}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38895F73-CF18-4255-8B6C-CE9B6A9C9956}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38895F73-CF18-4255-8B6C-CE9B6A9C9956}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38895F73-CF18-4255-8B6C-CE9B6A9C9956}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{520639F7-1AD4-4695-A441-31439912D8EB} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
@@ -88,5 +99,7 @@ Global
 		{AC8EF568-81C5-4B11-9C58-92CF4EED0FBE} = {C2D26B62-0061-4E7E-B2F5-4FDA1A2C5874}
 		{9F7367C0-5702-480F-89A8-F9D9F6350734} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
 		{B6FEC11D-F20A-4156-A009-FD29940E77AE} = {07C48A70-4A33-4A74-AC6B-C91FDF02EE22}
+		{40137D0C-E1E6-4D3B-B810-3A3F93B236F1} = {B6FEC11D-F20A-4156-A009-FD29940E77AE}
+		{38895F73-CF18-4255-8B6C-CE9B6A9C9956} = {40137D0C-E1E6-4D3B-B810-3A3F93B236F1}
 	EndGlobalSection
 EndGlobal
