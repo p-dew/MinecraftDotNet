@@ -1,4 +1,4 @@
-module Ehingeeinae.Ecs.QuotationExtensions
+module Ehingeeinae.Utils.QuotationExtensions
 
 open FSharp.Quotations
 

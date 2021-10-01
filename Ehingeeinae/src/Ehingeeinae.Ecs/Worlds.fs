@@ -9,6 +9,7 @@ open Microsoft.Extensions.Logging
 
 open TypeShape.Core
 
+open Ehingeeinae.Utils
 open Ehingeeinae.Ecs
 
 

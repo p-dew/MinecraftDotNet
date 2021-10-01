@@ -4,10 +4,11 @@ open System
 
 open TypeShape.Core
 
+open Ehingeeinae.Utils
+open Ehingeeinae.Utils.QuotationExtensions
 open Ehingeeinae.Ecs
 open Ehingeeinae.Ecs.Worlds
 open Ehingeeinae.Ecs.Querying
-open Ehingeeinae.Ecs.QuotationExtensions
 
 // --------
 // Component Shaping

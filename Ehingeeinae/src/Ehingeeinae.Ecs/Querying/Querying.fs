@@ -3,10 +3,10 @@ namespace Ehingeeinae.Ecs.Querying
 open System
 
 open System.Collections.Generic
+
+open Ehingeeinae.Utils
 open Ehingeeinae.Ecs
-// open Ehingeeinae.Ecs.Querying
 open Ehingeeinae.Ecs.Worlds
-open TypeShape.Core.Core
 
 
 // Based on Rust Amethyst Legion

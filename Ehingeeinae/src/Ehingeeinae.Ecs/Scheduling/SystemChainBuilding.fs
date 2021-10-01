@@ -8,10 +8,11 @@ open System.Runtime.CompilerServices
 open Ehingeeinae.Ecs.Querying.RuntimeCompilation
 open TypeShape.Core
 
+open Ehingeeinae.Utils
+open Ehingeeinae.Ecs.Utils
 open Ehingeeinae.Ecs.Querying
 open Ehingeeinae.Ecs.Resources
 open Ehingeeinae.Ecs.Systems
-open Ehingeeinae.Ecs.Utils
 
 
 module SystemChain =
