@@ -176,8 +176,13 @@ module rec ExprDisplay =
             | Patterns.DefaultValue expressionType ->
                 append $"defaultof<{expressionType.Name}>"
 
+            | Patterns.NewRecord (recordType, elements) ->
+                append $"{recordType.Name}("
+                appendExprs ", " elements
+                append ")"
+
             | expr ->
-                raise <| NotSupportedException($"This expression is not supported: %A{expr}")
+                raise <| NotSupportedException($"This expression is not supported for displaying: %A{expr}")
 
         appendExpr 0 expr
         sb.ToString()
