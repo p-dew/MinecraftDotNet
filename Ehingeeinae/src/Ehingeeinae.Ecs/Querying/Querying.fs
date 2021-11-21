@@ -16,48 +16,40 @@ type IEcsQuery<'q> =
 
 
 [<Struct>]
-type EcsReadComponent<'c> = internal { Pointer: voidptr }
+type EcsReadComponent<'c> =
+    internal
+        { Column: ComponentColumn<'c>
+          Index: int }
 
 [<Struct>]
-type EcsWriteComponent<'c> = internal { Pointer: voidptr }
+type EcsWriteComponent<'c> =
+    internal
+        { Column: ComponentColumn<'c>
+          Index: int }
 
 type 'c cread = EcsReadComponent<'c>
 type 'c cwrite = EcsWriteComponent<'c>
 
 module EcsReadComponent =
 
-    open System.Runtime.CompilerServices
-
-    let inline internal cast (c: 'c inref) : EcsReadComponent<'c> =
-        let c: 'c byref = &Unsafe.AsRef(&c) // inref to byref
-        let p = Unsafe.AsPointer(&c)
-        { Pointer = p }
-
     let getValue (comp: EcsReadComponent<'c>) : 'c inref =
-        let vp = comp.Pointer
-        assert (VoidPtr.isNotNull vp)
-        &Unsafe.AsRef<'c>(vp)
+        let comps = comp.Column.Components
+        let i = comp.Index
+        &comps.[i]
 
 
 module EcsWriteComponent =
 
-    open System.Runtime.CompilerServices
-
-    let inline internal cast (c: 'c byref) : EcsWriteComponent<'c> =
-        let p = Unsafe.AsPointer(&c)
-        { Pointer = p }
-
     let getValue (comp: EcsWriteComponent<'c>) : 'c byref =
-        let vp = comp.Pointer
-        assert (VoidPtr.isNotNull vp)
-        &Unsafe.AsRef<'c>(vp)
+        let comps = comp.Column.Components
+        let i = comp.Index
+        &comps.[i]
 
     let setValue (comp: EcsWriteComponent<'c>) (value: 'c inref) : unit =
-        let vp = comp.Pointer
-        assert (VoidPtr.isNotNull vp)
-        let p = &Unsafe.AsRef<'c>(vp)
+        let comps = comp.Column.Components
+        let i = comp.Index
         let value = value // dereference
-        p <- value
+        comps.[i] <- value
 
 
 [<AutoOpen>]
